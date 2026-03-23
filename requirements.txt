@@ -1,0 +1,10 @@
+tifffile
+shapely
+opencv-python
+matplotlib
+numpy
+torch
+torchvision
+pillow
+tqdm
+wandb
