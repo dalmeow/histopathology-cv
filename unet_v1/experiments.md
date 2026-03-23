@@ -15,6 +15,9 @@
 | resize + RMSprop + scheduler | 0.817 | 0.250 | 0.007 | 0.358 | direct |
 | resize + AdamW + scheduler | 0.826 | 0.342 | 0.003 | **0.390** | direct |
 | resize + AdamW + TTA | 0.830 | 0.336 | 0.003 | 0.390 | TTA |
+| deep supervision + instance norm | 0.847 | 0.303 | 0.031 | 0.394 | direct |
+| + dropout (p=0.3) | 0.852 | 0.289 | 0.041 | 0.394 | direct |
+| + wider (96 base, ~70M params) | 0.840 | 0.299 | 0.077 | **0.405** | direct |
 
 ---
 
@@ -74,3 +77,19 @@
 - Same model as above (no retraining)
 - **New:** Test-time augmentation: 8 transforms (4 rotations × hflip), average softmax probs
 - *TTA gave no improvement — model predictions already stable*
+
+### deep supervision + instance norm
+- **New:** Auxiliary loss heads at up1, up2, up3 decoder stages (weights: 1.0, 0.5, 0.25, 0.125)
+- **New:** BatchNorm → InstanceNorm throughout (more robust to stain variation)
+- All else same as resize + AdamW + scheduler
+- *Other class improved significantly (0.003 → 0.031); train mIoU reached 0.80, best val mIoU 0.59*
+
+### + dropout (p=0.3)
+- **New:** Dropout2d (p=0.3) at bottleneck and first two decoder stages
+- Addressing train/val gap (train mIoU 0.80 vs test Dice 0.39)
+- *Other improved further (0.041) but Stroma dropped; avg unchanged at 0.394*
+
+### + wider (96 base, ~70M params)
+- **New:** Filter counts scaled from 64 base to 96 base (64→128→256→512→1024 to 96→192→384→768→1536)
+- ~70M parameters vs ~31M previously
+- *Clear improvement in Other (0.077) — first run above 0.40 avg Dice*
