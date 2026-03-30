@@ -60,7 +60,7 @@ class UpLayer(nn.Module):
 
 
 class UNet(nn.Module):
-    def __init__(self, dimensions=3, dropout=0.3, base=96):
+    def __init__(self, dimensions=3, dropout=0.3, base=64):
         super(UNet, self).__init__()
         b = base
         self.conv1 = DoubleConv(3,    b)

@@ -112,9 +112,12 @@ def scan_dataset():
     raw_class_counts  = defaultdict(int)     # raw class → polygon count
     unseen_classes    = set()
 
+    split_raw_areas = {}   # split → {raw_class → area}
+
     for split_name, split_dir in SPLITS.items():
         samples = list(iter_samples(split_dir))
         split_counts[split_name] = len(samples)
+        per_split_areas = defaultdict(float)
         print(f"\n  [{split_name}]  {len(samples)} samples")
 
         for img_path, geo_path in samples:
@@ -127,11 +130,14 @@ def scan_dataset():
                 area = rec["area"]
                 raw_class_areas[cls]  += area
                 raw_class_counts[cls] += 1
+                per_split_areas[cls]  += area
                 mapped = CLASS_MAP.get(cls)
                 if mapped:
                     mapped_class_areas[mapped] += area
                 else:
                     unseen_classes.add(cls)
+
+        split_raw_areas[split_name] = dict(per_split_areas)
 
     print(f"\n  Total samples : {sum(split_counts.values())}")
     print(f"  Split counts  : {split_counts}")
@@ -157,6 +163,26 @@ def scan_dataset():
         pct = 100 * mapped_class_areas[cls] / total_mapped
         print(f"    {cls:<10s}  {pct:.1f}%")
 
+    # Canonical display order: Tumor, Stroma, then each sub-class of Other
+    OTHER_RAW = ["tissue_blood_vessel", "tissue_epidermis",
+                 "tissue_white_background", "tissue_necrosis"]
+    DISPLAY_ORDER = ["tissue_tumor", "tissue_stroma"] + OTHER_RAW
+
+    print(f"\n  Raw-class area % per split:")
+    # Header
+    col_names = [c.replace("tissue_", "") for c in DISPLAY_ORDER]
+    print(f"    {'split':<12s}  " + "  ".join(f"{n:<18s}" for n in col_names))
+    for split_name in ["train", "validation", "test"]:
+        areas = split_raw_areas.get(split_name, {})
+        total = sum(areas.values())
+        if total == 0:
+            continue
+        parts = "  ".join(
+            f"{100 * areas.get(cls, 0) / total:>5.1f}%             "[:18]
+            for cls in DISPLAY_ORDER
+        )
+        print(f"    {split_name:<12s}  {parts}")
+
     return {
         "split_counts":         split_counts,
         "all_heights":          all_heights,
@@ -164,6 +190,7 @@ def scan_dataset():
         "raw_class_areas":      dict(raw_class_areas),
         "raw_class_counts":     dict(raw_class_counts),
         "mapped_class_areas":   dict(mapped_class_areas),
+        "split_raw_areas":      split_raw_areas,
     }
 
 

@@ -18,6 +18,12 @@
 | deep supervision + instance norm | 0.847 | 0.303 | 0.031 | 0.394 | direct |
 | + dropout (p=0.3) | 0.852 | 0.289 | 0.041 | 0.394 | direct |
 | + wider (96 base, ~70M params) | 0.840 | 0.299 | 0.077 | **0.405** | direct |
+| back to 64 base + Focal loss (γ=2, 2×Dice) | 0.768 | 0.321 | 0.077 | 0.389 | direct |
+| Focal unweighted (γ=2, 2×Dice) | 0.845 | 0.342 | 0.043 | **0.410** | direct |
+| + HED aug + weighted sampler | 0.855 | 0.305 | 0.081 | **0.414** | direct |
+| HED aug + weighted sampler (rerun) | 0.814 | 0.354 | 0.036 | 0.401 | direct |
+| 96 base + all improvements | 0.822 | 0.353 | 0.066 | **0.414** | direct |
+| 64 base + per-image Dice loss | 0.815 | 0.352 | 0.081 | **0.416** | direct |
 
 ---
 
@@ -93,3 +99,36 @@
 - **New:** Filter counts scaled from 64 base to 96 base (64→128→256→512→1024 to 96→192→384→768→1536)
 - ~70M parameters vs ~31M previously
 - *Clear improvement in Other (0.077) — first run above 0.40 avg Dice*
+
+### 64 base + per-image Dice loss (`unet_v1_perdice`)
+- **New:** DiceLoss reduces over (H, W) only — per-image Dice averaged over batch (not pooled across batch dim)
+- **New:** `compute_dice_per_class` metric also per-image, skipping absent classes
+- Back to 64 base (~31M params)
+- *New best at 0.416 — Other strong (0.081), confirms per-image Dice fix gives cleaner gradient signal*
+
+### 96 base + all improvements (`unet_v1_96base`)
+- **New:** Scaled back to 96 base (~70M params)
+- All other improvements carried over: focal unweighted, HED aug, weighted sampler, per-class Dice logging
+- *Ties best avg Dice (0.414) — Stroma strong (0.353), Other improved (0.066) but below hed_aug (0.081)*
+
+### HED aug + weighted sampler rerun (`unet_v1_oversample`)
+- Identical config to `unet_v1_hed_aug` — only addition is per-class Dice logging to wandb
+- *Run-to-run variance: avg Dice 0.401 vs 0.414 — Stroma up (0.354) but Other and Tumor down; hed_aug result preferred*
+
+### + HED aug + weighted sampler (`unet_v1_hed_aug`)
+- **New:** HED stain augmentation (Tellez ±0.2 mult & additive) before brightness jitter
+- **New:** Brightness jitter reduced from ±20% to ±10%
+- **New:** WeightedRandomSampler — images upsampled proportional to Other+Stroma pixel fraction (floor=0.1)
+- All else same as focal unweighted run
+- *New best at 0.414 — Other recovered strongly (0.081) and Tumor improved (0.855); Stroma dipped (0.305)*
+
+### Focal unweighted (`unet_v1_focal_unweighted`)
+- **New:** Removed class weights from focal loss (pure focal modulation only)
+- All else same as previous focal run (64 base, γ=2, 2×Dice)
+- *New best at 0.410 — removing class weights helped Tumor significantly (0.845) with Stroma also up (0.342); Other dropped (0.043 vs 0.077)*
+
+### back to 64 base + Focal loss (γ=2, 2×Dice) (`unet_v1_focal`)
+- **New:** Reverted to 64 base (~31M params)
+- **New:** Weighted CE → Focal loss (γ=2, class weights retained; loss = Focal + 2×Dice)
+- All else same (AdamW lr=1e-4 wd=1e-2, deep supervision, instance norm, dropout p=0.3, 100 epochs)
+- *Other matched the 96-base run (0.077); Stroma improved slightly (0.321 vs 0.299) but avg Dice dropped (0.389 vs 0.405) — wider model still ahead overall*

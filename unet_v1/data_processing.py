@@ -77,15 +77,35 @@ def _sample_crop_center(h: int, w: int, patch: int) -> tuple[int, int]:
     return random.randint(half, h - half - 1), random.randint(half, w - half - 1)
 
 
-def _color_jitter(img: np.ndarray) -> np.ndarray:
-    """Apply random brightness and contrast jitter to a uint8 RGB image."""
+# HED colour-space matrices (Macenko/skimage convention).
+# RGB → OD → HED decomposition for stain augmentation.
+_RGB_FROM_HED = np.array([[0.65, 0.70, 0.29],
+                           [0.07, 0.99, 0.11],
+                           [0.27, 0.57, 0.78]], dtype=np.float32)
+_HED_FROM_RGB = np.linalg.inv(_RGB_FROM_HED).astype(np.float32)
+
+
+def _hed_jitter(img: np.ndarray) -> np.ndarray:
+    """HED stain augmentation on a uint8 RGB image (Tellez et al. 2019).
+
+    Perturbs each stain channel with:
+        h' = h * (1 + alpha) + beta,  alpha,beta ~ U(-0.2, 0.2)
+    """
     img = img.astype(np.float32)
-    # brightness: scale all pixels
-    img *= random.uniform(0.8, 1.2)
-    # contrast: scale around per-channel mean
+    od  = -np.log((img + 1.0) / 256.0)         # RGB → optical density (H, W, 3)
+    hed = od @ _HED_FROM_RGB.T                  # OD → HED concentrations (H, W, 3)
     for c in range(3):
-        mu = img[:, :, c].mean()
-        img[:, :, c] = (img[:, :, c] - mu) * random.uniform(0.8, 1.2) + mu
+        hed[:, :, c] *= 1.0 + random.uniform(-0.2, 0.2)
+        hed[:, :, c] +=       random.uniform(-0.2, 0.2)
+    od_rec = hed @ _RGB_FROM_HED.T              # HED → OD → RGB
+    img = np.exp(-od_rec) * 256.0 - 1.0
+    return np.clip(img, 0, 255).astype(np.uint8)
+
+
+def _color_jitter(img: np.ndarray) -> np.ndarray:
+    """Brightness jitter (±10%) on a uint8 RGB image."""
+    img = img.astype(np.float32)
+    img *= random.uniform(0.9, 1.1)
     return np.clip(img, 0, 255).astype(np.uint8)
 
 
@@ -204,6 +224,34 @@ class TissueDataset(Dataset):
             if geo_path.exists():
                 self.samples.append((img_path, geo_path))
 
+    def get_sample_weights(self, cache_path: Path = None, floor: float = 0.1) -> torch.Tensor:
+        """Per-image sampling weights based on Other+Stroma pixel fraction.
+
+        Weights are proportional to the fraction of minority-class pixels
+        (Stroma=1, Other=2) in each full-resolution mask, floored at `floor`
+        so every image remains reachable.  Results are cached to avoid
+        re-rasterizing GeoJSON on every run.
+        """
+        if cache_path is not None and Path(cache_path).exists():
+            print(f"Loaded sample weights from cache: {cache_path}")
+            return torch.from_numpy(np.load(cache_path)).float()
+
+        print(f"Computing sample weights for {len(self.samples)} images...")
+        weights = []
+        for img_path, geo_path in self.samples:
+            img  = tifffile.imread(str(img_path))[:, :, :3]
+            h, w = img.shape[:2]
+            mask = geojson_to_mask(geo_path, h, w)
+            minority_frac = np.sum((mask == 1) | (mask == 2)) / mask.size
+            weights.append(max(minority_frac, floor))
+
+        arr = np.array(weights, dtype=np.float32)
+        if cache_path is not None:
+            np.save(cache_path, arr)
+            print(f"Cached sample weights to: {cache_path}")
+
+        return torch.from_numpy(arr).float()
+
     def __len__(self):
         return len(self.samples)
 
@@ -234,6 +282,7 @@ class TissueDataset(Dataset):
                 img  = np.flipud(img).copy()
                 mask = np.flipud(mask).copy()
 
+            img = _hed_jitter(img)
             img = _color_jitter(img)
 
         # To tensor + normalise
