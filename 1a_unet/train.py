@@ -1,81 +1,31 @@
 import argparse
+import sys
 from pathlib import Path
+
+# Allow imports from arch/ (this dir) and 1_shared/ (shared data + losses)
+_HERE = Path(__file__).parent
+sys.path.insert(0, str(_HERE))
+sys.path.insert(0, str(_HERE.parent / "1_shared"))
 
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
 import wandb
-from torch import nn
 from torch.utils.data import DataLoader, WeightedRandomSampler
 from tqdm import tqdm
 
+from arch import UNet
 from data_processing import TissueDataset
-from unet import UNet
+from losses import FocalLoss, DiceLoss, build_primary_criterion, CLASS_WEIGHTS
 
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
-DATA_ROOT = Path(__file__).parent.parent.parent / "Coumputer_Vision_Mini_Project_Data" / "Dataset_Splits"
-RUNS_DIR  = Path(__file__).parent / "model"
+DATA_ROOT = _HERE.parent.parent / "Coumputer_Vision_Mini_Project_Data" / "Dataset_Splits"
+RUNS_DIR  = _HERE / "checkpoints"
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else
                       "mps"  if torch.backends.mps.is_available() else "cpu")
-
-# Class weights derived from inverse pixel frequency (train set):
-#   Tumor 69.7%  Stroma 25.1%  Other 5.3%
-CLASS_WEIGHTS = torch.tensor([1/0.697, 1/0.251, 1/0.053])
-CLASS_WEIGHTS = CLASS_WEIGHTS.sqrt()                  # soften: ~3.5x ratio instead of 13x
-CLASS_WEIGHTS = CLASS_WEIGHTS / CLASS_WEIGHTS.sum()   # normalise to sum to 1
-
-
-# ---------------------------------------------------------------------------
-# Losses
-# ---------------------------------------------------------------------------
-
-class FocalLoss(nn.Module):
-    """Multiclass focal loss with optional per-class weights."""
-    def __init__(self, gamma: float = 2.0, weight: torch.Tensor = None):
-        super().__init__()
-        self.gamma  = gamma
-        self.weight = weight  # passed to F.cross_entropy for class balancing
-
-    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        # log-softmax for numerical stability
-        log_p  = F.log_softmax(logits, dim=1)                  # (B, C, H, W)
-        ce     = F.nll_loss(log_p, targets, weight=self.weight, reduction="none")  # (B, H, W)
-        # gather p_t = softmax probability of the true class
-        p_t    = torch.exp(-ce)
-        focal  = (1 - p_t) ** self.gamma * ce
-        return focal.mean()
-
-
-class DiceLoss(nn.Module):
-    def __init__(self, num_classes: int = 3, eps: float = 1e-6):
-        super().__init__()
-        self.num_classes = num_classes
-        self.eps = eps
-
-    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        probs      = logits.softmax(dim=1)                              # (B, C, H, W)
-        targets_oh = nn.functional.one_hot(targets, self.num_classes)   # (B, H, W, C)
-        targets_oh = targets_oh.permute(0, 3, 1, 2).float()            # (B, C, H, W)
-
-        # Reduce over H, W only → (B, C); average over images then classes
-        intersection = (probs * targets_oh).sum(dim=(2, 3))            # (B, C)
-        cardinality  = probs.sum(dim=(2, 3)) + targets_oh.sum(dim=(2, 3))
-        dice_per_img = (2 * intersection + self.eps) / (cardinality + self.eps)
-        return 1 - dice_per_img.mean()
-
-
-def build_primary_criterion(loss_type: str, gamma: float, use_class_weights: bool, device: torch.device) -> nn.Module:
-    """Return the primary (per-pixel) loss criterion."""
-    weights = CLASS_WEIGHTS.to(device) if use_class_weights else None
-    if loss_type == "focal":
-        return FocalLoss(gamma=gamma, weight=weights)
-    elif loss_type == "ce":
-        return nn.CrossEntropyLoss(weight=weights)
-    else:
-        raise ValueError(f"Unknown loss type: {loss_type!r}. Choose 'focal' or 'ce'.")
 
 
 # ---------------------------------------------------------------------------
@@ -306,15 +256,9 @@ if __name__ == "__main__":
     parser.add_argument("--save-interval",       type=int,   default=10)
     parser.add_argument("--early-stop-patience", type=int,   default=25)
     parser.add_argument("--resume",              action="store_true")
-    # Loss configuration
-    parser.add_argument("--loss",        type=str,   default="focal",
-                        choices=["focal", "ce"],
-                        help="Primary loss function (default: focal)")
-    parser.add_argument("--loss-ratio",  type=float, default=2.0,
-                        help="Weight multiplier on DiceLoss (default: 2.0 → primary + 2*Dice)")
-    parser.add_argument("--focal-gamma", type=float, default=2.0,
-                        help="Focal loss focusing parameter gamma (default: 2.0)")
-    parser.add_argument("--no-class-weights", action="store_true",
-                        help="Disable class weighting in the primary loss (default: weights enabled)")
+    parser.add_argument("--loss",        type=str,   default="focal", choices=["focal", "ce"])
+    parser.add_argument("--loss-ratio",  type=float, default=2.0)
+    parser.add_argument("--focal-gamma", type=float, default=2.0)
+    parser.add_argument("--no-class-weights", action="store_true")
     args = parser.parse_args()
     train(args)
