@@ -12,12 +12,9 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from arch import UNet
+from arch import Autoencoder
 from data_processing import TissueDataset
 
-# ---------------------------------------------------------------------------
-# Paths / constants
-# ---------------------------------------------------------------------------
 DATA_ROOT       = _HERE.parent.parent / "Coumputer_Vision_Mini_Project_Data" / "Dataset_Splits"
 CHECKPOINTS_DIR = _HERE / "checkpoints"
 
@@ -38,12 +35,8 @@ def unnorm(t: torch.Tensor) -> np.ndarray:
     return np.clip(t.permute(1, 2, 0).numpy() * STD + MEAN, 0, 1)
 
 
-# ---------------------------------------------------------------------------
-# Evaluation
-# ---------------------------------------------------------------------------
-
-def evaluate(model: torch.nn.Module, device: torch.device) -> TissueDataset:
-    test_ds     = TissueDataset(DATA_ROOT / "test", augment=False)
+def evaluate(model: torch.nn.Module, device: torch.device, img_size: int = 512) -> TissueDataset:
+    test_ds     = TissueDataset(DATA_ROOT / "test", augment=False, img_size=img_size)
     test_loader = DataLoader(test_ds, batch_size=1, shuffle=False, num_workers=2)
 
     per_class_dice: dict[int, list] = {c: [] for c in range(3)}
@@ -71,10 +64,6 @@ def evaluate(model: torch.nn.Module, device: torch.device) -> TissueDataset:
     return test_ds
 
 
-# ---------------------------------------------------------------------------
-# Qualitative visualisation
-# ---------------------------------------------------------------------------
-
 def qualitative(model: torch.nn.Module, test_ds: TissueDataset, device: torch.device,
                 run_dir: Path, n_show: int = 4) -> None:
     fig, axes = plt.subplots(n_show, 3, figsize=(10, 3.5 * n_show))
@@ -101,31 +90,27 @@ def qualitative(model: torch.nn.Module, test_ds: TissueDataset, device: torch.de
     plt.show()
 
 
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
-
 def main(args):
     run_dir   = CHECKPOINTS_DIR / args.run_name
-    best_path = run_dir / "unet_tissue_best.pt"
-
+    best_path = run_dir / "ae_finetune_best.pt"
     if not best_path.exists():
         raise FileNotFoundError(f"No checkpoint found at {best_path}")
 
     print(f"Device: {DEVICE}")
     print(f"Loading model from {best_path}")
 
-    model = UNet(dimensions=3, base=64, use_residual=getattr(args, "use_residual", False)).to(DEVICE)
+    model = Autoencoder(mode="finetune", base=64, use_residual=args.use_residual).to(DEVICE)
     model.load_state_dict(torch.load(best_path, map_location=DEVICE))
     model.eval()
 
-    test_ds = evaluate(model, DEVICE)
+    test_ds = evaluate(model, DEVICE, img_size=args.img_size)
     qualitative(model, test_ds, DEVICE, run_dir)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Evaluate UNet on test set")
-    parser.add_argument("--run-name", type=str, required=True,
-                        help="Subdirectory name under checkpoints/ to load from")
+    parser = argparse.ArgumentParser(description="Evaluate finetuned Autoencoder on test set")
+    parser.add_argument("--run-name",     type=str, required=True)
+    parser.add_argument("--use-residual", action="store_true")
+    parser.add_argument("--img-size",     type=int, default=512)
     args = parser.parse_args()
     main(args)

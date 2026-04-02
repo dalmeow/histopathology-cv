@@ -59,19 +59,32 @@ class UpLayer(nn.Module):
         return x
 
 
+class ResidualUpLayer(nn.Module):
+    def __init__(self, in_ch, out_ch):
+        super(ResidualUpLayer, self).__init__()
+        self.up = Up(in_ch, out_ch)
+        self.conv = DoubleConv(in_ch, out_ch)
+        self.shortcut = nn.Conv2d(in_ch, out_ch, kernel_size=1)
+
+    def forward(self, x1, x2):
+        a = self.up(x1, x2)
+        return self.conv(a) + self.shortcut(a)
+
+
 class UNet(nn.Module):
-    def __init__(self, dimensions=3, dropout=0.3, base=64):
+    def __init__(self, dimensions=3, dropout=0.3, base=64, use_residual=False):
         super(UNet, self).__init__()
         b = base
+        UpBlock = ResidualUpLayer if use_residual else UpLayer
         self.conv1 = DoubleConv(3,    b)
         self.down1 = DownLayer(b,     b*2)
         self.down2 = DownLayer(b*2,   b*4)
         self.down3 = DownLayer(b*4,   b*8)
         self.down4 = DownLayer(b*8,   b*16)
-        self.up1 = UpLayer(b*16,  b*8)
-        self.up2 = UpLayer(b*8,   b*4)
-        self.up3 = UpLayer(b*4,   b*2)
-        self.up4 = UpLayer(b*2,   b)
+        self.up1 = UpBlock(b*16,  b*8)
+        self.up2 = UpBlock(b*8,   b*4)
+        self.up3 = UpBlock(b*4,   b*2)
+        self.up4 = UpBlock(b*2,   b)
         self.last_conv  = nn.Conv2d(b,    dimensions, 1)
         # Auxiliary heads for deep supervision (used only during training)
         self.aux1 = nn.Conv2d(b*8,  dimensions, 1)

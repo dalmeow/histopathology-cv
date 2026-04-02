@@ -81,8 +81,7 @@ def run_epoch(model, loader, criterion_primary, criterion_dice, loss_ratio, opti
 
     ctx = torch.enable_grad() if is_train else torch.no_grad()
     with ctx:
-        pbar = tqdm(loader, desc="train" if is_train else "val  ", leave=False)
-        for images, masks in pbar:
+        for images, masks in loader:
             images = images.to(DEVICE)
             masks  = masks.to(DEVICE)
             outputs = model(images)
@@ -114,7 +113,6 @@ def run_epoch(model, loader, criterion_primary, criterion_dice, loss_ratio, opti
             for c, d in enumerate(compute_dice_per_class(preds_cpu, masks_cpu)):
                 total_dice[c] += d
             n_batches  += 1
-            pbar.set_postfix(loss=f"{loss.item():.4f}")
 
     mean_dice = [d / n_batches for d in total_dice]
     return total_loss / n_batches, total_iou / n_batches, mean_dice
@@ -134,8 +132,9 @@ def train(args):
     print(f"Run dir: {model_dir}")
     print(f"Loss: {args.loss}  |  loss_ratio (dice weight): {args.loss_ratio}  |  focal gamma: {args.focal_gamma}  |  class weights: {not args.no_class_weights}")
 
-    train_dataset = TissueDataset(DATA_ROOT / "train",      augment=True)
-    val_dataset   = TissueDataset(DATA_ROOT / "validation", augment=False)
+    img_size      = getattr(args, "img_size", 512)
+    train_dataset = TissueDataset(DATA_ROOT / "train",      augment=True,  img_size=img_size)
+    val_dataset   = TissueDataset(DATA_ROOT / "validation", augment=False, img_size=img_size)
     print(f"Train: {len(train_dataset)} patches  |  Val: {len(val_dataset)} patches")
 
     sample_weights = train_dataset.get_sample_weights(
@@ -149,7 +148,7 @@ def train(args):
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, sampler=sampler, num_workers=2, pin_memory=True)
     val_loader   = DataLoader(val_dataset,   batch_size=args.batch_size, shuffle=False,  num_workers=2, pin_memory=True)
 
-    model = UNet(dimensions=3, base=64).to(DEVICE)
+    model = UNet(dimensions=3, base=64, use_residual=getattr(args, "use_residual", False)).to(DEVICE)
 
     if args.resume and model_path.exists():
         print(f"Resuming from {model_path}")
@@ -169,8 +168,9 @@ def train(args):
     wandb.init(
         project="tissue-segmentation",
         name=args.run_name,
+
         config={
-            "architecture":  "UNet",
+            "architecture":  "UNet-Residual" if getattr(args, "use_residual", False) else "UNet",
             "unet_base":     64,
             "batch_size":    args.batch_size,
             "epochs":        args.epochs,
@@ -183,7 +183,7 @@ def train(args):
             "focal_gamma":   args.focal_gamma,
             "class_weights": CLASS_WEIGHTS.tolist() if not args.no_class_weights else None,
             "scheduler":     "ReduceLROnPlateau(mode=max, factor=0.5, patience=10)",
-            "patch_size":    512,
+            "patch_size":    img_size,
             "num_classes":   3,
             "augmentation":  "hflip+vflip+rot90+brightness(±10%)+HED_stain",
             "sampling":      "weighted_random_sampler(Other+Stroma_frac,floor=0.1)",
@@ -196,18 +196,13 @@ def train(args):
 
     CLASS_NAMES = ["Tumor", "Stroma", "Other"]
 
-    for epoch in range(args.epochs):
+    epoch_bar = tqdm(range(args.epochs), desc=args.run_name)
+    for epoch in epoch_bar:
         train_loss, train_iou, train_dice = run_epoch(model, train_loader, criterion_primary, criterion_dice, args.loss_ratio, optimizer)
         val_loss,   val_iou,   val_dice   = run_epoch(model, val_loader,   criterion_primary, criterion_dice, args.loss_ratio)
 
-        print(
-            f"Epoch {epoch+1:3d}/{args.epochs}"
-            f"  train loss={train_loss:.4f}  train mIoU={train_iou:.4f}"
-            f"  val loss={val_loss:.4f}  val mIoU={val_iou:.4f}"
-            f"  val Dice=({val_dice[0]:.3f}/{val_dice[1]:.3f}/{val_dice[2]:.3f})"
-        )
-
         scheduler.step(val_iou)
+        epoch_bar.set_postfix(val_iou=f"{val_iou:.4f}", val_dice=f"{val_dice[0]:.3f}/{val_dice[1]:.3f}/{val_dice[2]:.3f}")
 
         wandb.log({
             "epoch":      epoch + 1,
@@ -224,17 +219,16 @@ def train(args):
             best_val_iou      = val_iou
             epochs_no_improve = 0
             torch.save(model.state_dict(), best_path)
-            print(f"  → New best val mIoU {best_val_iou:.4f} — saved to {best_path}")
             wandb.run.summary["best_val_mIoU"] = best_val_iou
+            wandb.run.summary["best_epoch"]    = epoch + 1
         else:
             epochs_no_improve += 1
             if epochs_no_improve >= args.early_stop_patience:
-                print(f"  → Early stopping triggered after {epoch+1} epochs")
+                print(f"Early stopping at epoch {epoch+1}")
                 break
 
         if (epoch + 1) % args.save_interval == 0:
             torch.save(model.state_dict(), model_path)
-            print(f"  → Checkpoint saved to {model_path}")
 
     torch.save(model.state_dict(), model_path)
     wandb.finish()

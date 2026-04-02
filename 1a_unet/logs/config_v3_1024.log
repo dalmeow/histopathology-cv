@@ -1,0 +1,19 @@
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/s2871351/.netrc.
+wandb: Currently logged in as: dalmeow (adi-zin) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.25.1
+wandb: Run data is saved locally in /home/s2871351/cv/histopathology-cv/1a_unet/wandb/run-20260402_225933-owu7ifrg
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run unet_v3_1024
+wandb: ⭐️ View project at https://wandb.ai/adi-zin/tissue-segmentation
+wandb: 🚀 View run at https://wandb.ai/adi-zin/tissue-segmentation/runs/owu7ifrg
+Cannot kill GPU process 2493514 (owned by another user)
+Cannot kill GPU process 2504067 (owned by another user)
+Cannot kill GPU process 2512956 (owned by another user)
+Cannot kill GPU process 2513039 (owned by another user)
+Cannot kill GPU process 2512970 (owned by another user)
+Device: cuda
+Run dir: /home/s2871351/cv/histopathology-cv/1a_unet/checkpoints/unet_v3_1024
+Loss: focal  |  loss_ratio (dice weight): 2.0  |  focal gamma: 2.0  |  class weights: False
+Train: 163 patches  |  Val: 20 patches
+Loaded sample weights from cache: /home/s2871351/cv/Coumputer_Vision_Mini_Project_Data/Dataset_Splits/train/sample_weights.npy
+unet_v3_1024:   0%|          | 0/100 [00:00<?, ?it/s]unet_v3_1024:   0%|          | 0/100 [01:13<?, ?it/s, val_dice=0.611/0.422/0.009, val_iou=0.2638]unet_v3_1024:   1%|          | 1/100 [01:13<2:01:08, 73.42s/it, val_dice=0.611/0.422/0.009, val_iou=0.2638]unet_v3_1024:   1%|          | 1/100 [02:24<2:01:08, 73.42s/it, val_dice=0.655/0.419/0.000, val_iou=0.2764]unet_v3_1024:   2%|▏         | 2/100 [02:24<1:57:53, 72.18s/it, val_dice=0.655/0.419/0.000, val_iou=0.2764]unet_v3_1024:   2%|▏         | 2/100 [03:35<1:57:53, 72.18s/it, val_dice=0.677/0.427/0.025, val_iou=0.2983]unet_v3_1024:   3%|▎         | 3/100 [03:35<1:55:57, 71.73s/it, val_dice=0.677/0.427/0.025, val_iou=0.2983]unet_v3_1024:   3%|▎         | 3/100 [04:47<1:55:57, 71.73s/it, val_dice=0.694/0.437/0.032, val_iou=0.3108]unet_v3_1024:   4%|▍         | 4/100 [04:47<1:54:29, 71.56s/it, val_dice=0.694/0.437/0.032, val_iou=0.3108]unet_v3_1024:   4%|▍         | 4/100 [05:58<1:54:29, 71.56s/it, val_dice=0.665/0.448/0.009, val_iou=0.2956]unet_v3_1024:   5%|▌         | 5/100 [05:58<1:53:04, 71.41s/it, val_dice=0.665/0.448/0.009, val_iou=0.2956]unet_v3_1024:   5%|▌         | 5/100 [07:09<1:53:04, 71.41s/it, val_dice=0.647/0.447/0.021, val_iou=0.2939]unet_v3_1024:   6%|▌         | 6/100 [07:09<1:51:43, 71.31s/it, val_dice=0.647/0.447/0.021, val_iou=0.2939]unet_v3_1024:   6%|▌         | 6/100 [08:20<1:51:43, 71.31s/it, val_dice=0.681/0.449/0.037, val_iou=0.3127]unet_v3_1024:   7%|▋         | 7/100 [08:20<1:50:34, 71.33s/it, val_dice=0.681/0.449/0.037, val_iou=0.3127]unet_v3_1024:   7%|▋         | 7/100 [09:32<1:50:34, 71.33s/it, val_dice=0.723/0.464/0.038, val_iou=0.3373]unet_v3_1024:   8%|▊         | 8/100 [09:32<1:49:22, 71.33s/it, val_dice=0.723/0.464/0.038, val_iou=0.3373]unet_v3_1024:   8%|▊         | 8/100 [10:43<1:49:22, 71.33s/it, val_dice=0.674/0.461/0.053, val_iou=0.3214]unet_v3_1024:   9%|▉         | 9/100 [10:43<1:48:05, 71.27s/it, val_dice=0.674/0.461/0.053, val_iou=0.3214]

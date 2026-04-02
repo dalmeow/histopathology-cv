@@ -212,9 +212,11 @@ class TissueDataset(Dataset):
         - No augmentation
     """
 
-    def __init__(self, split_dir: Path, augment: bool = False):
-        self.augment = augment
-        self.samples = []
+    def __init__(self, split_dir: Path, augment: bool = False, img_size: int = 512, return_raw: bool = False):
+        self.augment    = augment
+        self.img_size   = img_size
+        self.return_raw = return_raw
+        self.samples    = []
 
         img_dir    = split_dir / "image"
         tissue_dir = split_dir / "tissue"
@@ -263,9 +265,10 @@ class TissueDataset(Dataset):
         h, w = img.shape[:2]
         mask = geojson_to_mask(geo_path, h, w)
 
-        # Resize to PATCH_SIZE × PATCH_SIZE
-        img  = cv2.resize(img,  (PATCH_SIZE, PATCH_SIZE), interpolation=cv2.INTER_LINEAR)
-        mask = cv2.resize(mask, (PATCH_SIZE, PATCH_SIZE), interpolation=cv2.INTER_NEAREST)
+        # Resize to target size (skip if already correct)
+        if h != self.img_size or w != self.img_size:
+            img  = cv2.resize(img,  (self.img_size, self.img_size), interpolation=cv2.INTER_LINEAR)
+            mask = cv2.resize(mask, (self.img_size, self.img_size), interpolation=cv2.INTER_NEAREST)
 
         # Augmentation (train only)
         if self.augment:
@@ -286,8 +289,10 @@ class TissueDataset(Dataset):
             img = _color_jitter(img)
 
         # To tensor + normalise
-        img_tensor  = torch.from_numpy(img).permute(2, 0, 1).float() / 255.0
-        img_tensor  = NORMALIZE(img_tensor)
+        raw_tensor  = torch.from_numpy(img).permute(2, 0, 1).float() / 255.0
+        img_tensor  = NORMALIZE(raw_tensor.clone())
         mask_tensor = torch.from_numpy(mask).long()
 
+        if self.return_raw:
+            return img_tensor, raw_tensor, mask_tensor
         return img_tensor, mask_tensor

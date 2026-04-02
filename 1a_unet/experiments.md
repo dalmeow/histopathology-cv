@@ -24,6 +24,7 @@
 | HED aug + weighted sampler (rerun) | 0.814 | 0.354 | 0.036 | 0.401 | direct |
 | 96 base + all improvements | 0.822 | 0.353 | 0.066 | **0.414** | direct |
 | 64 base + per-image Dice loss | 0.815 | 0.352 | 0.081 | **0.416** | direct |
+| unet_v2_resid (residual decoder) | 0.856 | 0.473 | 0.055 | **0.461** | direct |
 
 ---
 
@@ -99,6 +100,12 @@
 - **New:** Filter counts scaled from 64 base to 96 base (64→128→256→512→1024 to 96→192→384→768→1536)
 - ~70M parameters vs ~31M previously
 - *Clear improvement in Other (0.077) — first run above 0.40 avg Dice*
+
+### Residual decoder (`unet_v2_resid`)
+- **New:** ResidualUpLayer in all 4 decoder blocks — 1×1 conv shortcut from concatenated features to block output
+- All else identical to `unet_v1_perdice` (64 base, focal unweighted, 2×Dice, AdamW, HED aug, weighted sampler)
+- Converged ~epoch 75, earlier than v1 (100 epochs) — residual connections accelerate learning
+- *New best at 0.461 — Stroma improved strongly (0.473 vs 0.352); Tumor also up (0.856); Other dropped (0.055 vs 0.081)*
 
 ### 64 base + per-image Dice loss (`unet_v1_perdice`)
 - **New:** DiceLoss reduces over (H, W) only — per-image Dice averaged over batch (not pooled across batch dim)

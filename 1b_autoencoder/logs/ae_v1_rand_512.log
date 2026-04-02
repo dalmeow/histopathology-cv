@@ -1,0 +1,53 @@
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/s2871351/.netrc.
+wandb: Currently logged in as: dalmeow (adi-zin) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.25.1
+wandb: Run data is saved locally in /home/s2871351/cv/histopathology-cv/wandb/run-20260402_160932-usskbewb
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run ae_v1_rand
+wandb: ⭐️ View project at https://wandb.ai/adi-zin/tissue-segmentation
+wandb: 🚀 View run at https://wandb.ai/adi-zin/tissue-segmentation/runs/usskbewb
+Cannot kill GPU process 2351073 (owned by another user)
+Cannot kill GPU process 2361629 (owned by another user)
+Cannot kill GPU process 2364327 (owned by another user)
+Device: cuda
+Run: ae_v1_rand
+Loaded encoder weights from /home/s2871351/cv/histopathology-cv/1b_autoencoder/checkpoints/ae_v1_pretrain/ae_best.pt
+Encoder frozen.
+Train: 163  |  Val: 20
+Loaded sample weights from cache: /home/s2871351/cv/Coumputer_Vision_Mini_Project_Data/Dataset_Splits/train/sample_weights.npy
+ae_v1_rand:   0%|          | 0/100 [00:00<?, ?it/s]ae_v1_rand:   0%|          | 0/100 [00:30<?, ?it/s, val_dice=0.669/0.401/0.029, val_iou=0.2991]ae_v1_rand:   1%|          | 1/100 [00:31<51:14, 31.05s/it, val_dice=0.669/0.401/0.029, val_iou=0.2991]ae_v1_rand:   1%|          | 1/100 [00:45<51:14, 31.05s/it, val_dice=0.644/0.426/0.022, val_iou=0.2928]ae_v1_rand:   2%|▏         | 2/100 [00:45<34:25, 21.07s/it, val_dice=0.644/0.426/0.022, val_iou=0.2928]ae_v1_rand:   2%|▏         | 2/100 [00:59<34:25, 21.07s/it, val_dice=0.658/0.442/0.034, val_iou=0.3122]ae_v1_rand:   3%|▎         | 3/100 [00:59<28:56, 17.91s/it, val_dice=0.658/0.442/0.034, val_iou=0.3122]ae_v1_rand:   3%|▎         | 3/100 [01:13<28:56, 17.91s/it, val_dice=0.677/0.447/0.024, val_iou=0.3234]ae_v1_rand:   4%|▍         | 4/100 [01:13<26:18, 16.44s/it, val_dice=0.677/0.447/0.024, val_iou=0.3234]ae_v1_rand:   4%|▍         | 4/100 [01:27<26:18, 16.44s/it, val_dice=0.653/0.440/0.022, val_iou=0.3071]ae_v1_rand:   5%|▌         | 5/100 [01:27<24:37, 15.55s/it, val_dice=0.653/0.440/0.022, val_iou=0.3071]ae_v1_rand:   5%|▌         | 5/100 [01:41<24:37, 15.55s/it, val_dice=0.646/0.448/0.033, val_iou=0.3171]ae_v1_rand:   6%|▌         | 6/100 [01:41<23:29, 14.99s/it, val_dice=0.646/0.448/0.033, val_iou=0.3171]ae_v1_rand:   6%|▌         | 6/100 [01:55<23:29, 14.99s/it, val_dice=0.663/0.449/0.026, val_iou=0.3134]ae_v1_rand:   7%|▋         | 7/100 [01:55<22:41, 14.64s/it, val_dice=0.663/0.449/0.026, val_iou=0.3134]ae_v1_rand:   7%|▋         | 7/100 [02:09<22:41, 14.64s/it, val_dice=0.674/0.450/0.047, val_iou=0.3372]ae_v1_rand:   8%|▊         | 8/100 [02:09<22:14, 14.51s/it, val_dice=0.674/0.450/0.047, val_iou=0.3372]ae_v1_rand:   8%|▊         | 8/100 [02:23<22:14, 14.51s/it, val_dice=0.662/0.446/0.041, val_iou=0.3358]ae_v1_rand:   9%|▉         | 9/100 [02:23<21:46, 14.35s/it, val_dice=0.662/0.446/0.041, val_iou=0.3358]ae_v1_rand:   9%|▉         | 9/100 [02:37<21:46, 14.35s/it, val_dice=0.665/0.451/0.031, val_iou=0.3330]ae_v1_rand:  10%|█         | 10/100 [02:37<21:21, 14.24s/it, val_dice=0.665/0.451/0.031, val_iou=0.3330]ae_v1_rand:  10%|█         | 10/100 [02:51<21:21, 14.24s/it, val_dice=0.670/0.453/0.045, val_iou=0.3400]ae_v1_rand:  11%|█         | 11/100 [02:51<21:03, 14.20s/it, val_dice=0.670/0.453/0.045, val_iou=0.3400]ae_v1_rand:  11%|█         | 11/100 [03:05<21:03, 14.20s/it, val_dice=0.678/0.453/0.053, val_iou=0.3381]ae_v1_rand:  12%|█▏        | 12/100 [03:05<20:43, 14.13s/it, val_dice=0.678/0.453/0.053, val_iou=0.3381]ae_v1_rand:  12%|█▏        | 12/100 [03:19<20:43, 14.13s/it, val_dice=0.690/0.456/0.045, val_iou=0.3588]ae_v1_rand:  13%|█▎        | 13/100 [03:19<20:30, 14.15s/it, val_dice=0.690/0.456/0.045, val_iou=0.3588]ae_v1_rand:  13%|█▎        | 13/100 [03:33<20:30, 14.15s/it, val_dice=0.692/0.457/0.049, val_iou=0.3608]ae_v1_rand:  14%|█▍        | 14/100 [03:33<20:19, 14.17s/it, val_dice=0.692/0.457/0.049, val_iou=0.3608]ae_v1_rand:  14%|█▍        | 14/100 [03:47<20:19, 14.17s/it, val_dice=0.689/0.453/0.049, val_iou=0.3494]ae_v1_rand:  15%|█▌        | 15/100 [03:47<19:59, 14.11s/it, val_dice=0.689/0.453/0.049, val_iou=0.3494]ae_v1_rand:  15%|█▌        | 15/100 [04:01<19:59, 14.11s/it, val_dice=0.680/0.458/0.040, val_iou=0.3511]ae_v1_rand:  16%|█▌        | 16/100 [04:01<19:42, 14.08s/it, val_dice=0.680/0.458/0.040, val_iou=0.3511]ae_v1_rand:  16%|█▌        | 16/100 [04:15<19:42, 14.08s/it, val_dice=0.681/0.455/0.051, val_iou=0.3553]ae_v1_rand:  17%|█▋        | 17/100 [04:15<19:26, 14.05s/it, val_dice=0.681/0.455/0.051, val_iou=0.3553]ae_v1_rand:  17%|█▋        | 17/100 [04:29<19:26, 14.05s/it, val_dice=0.718/0.450/0.052, val_iou=0.3618]ae_v1_rand:  18%|█▊        | 18/100 [04:30<19:14, 14.07s/it, val_dice=0.718/0.450/0.052, val_iou=0.3618]ae_v1_rand:  18%|█▊        | 18/100 [04:44<19:14, 14.07s/it, val_dice=0.700/0.449/0.047, val_iou=0.3642]ae_v1_rand:  19%|█▉        | 19/100 [04:44<19:05, 14.15s/it, val_dice=0.700/0.449/0.047, val_iou=0.3642]ae_v1_rand:  19%|█▉        | 19/100 [04:58<19:05, 14.15s/it, val_dice=0.759/0.451/0.056, val_iou=0.3991]ae_v1_rand:  20%|██        | 20/100 [04:58<18:59, 14.24s/it, val_dice=0.759/0.451/0.056, val_iou=0.3991]ae_v1_rand:  20%|██        | 20/100 [05:12<18:59, 14.24s/it, val_dice=0.690/0.444/0.047, val_iou=0.3603]ae_v1_rand:  21%|██        | 21/100 [05:12<18:42, 14.21s/it, val_dice=0.690/0.444/0.047, val_iou=0.3603]ae_v1_rand:  21%|██        | 21/100 [05:26<18:42, 14.21s/it, val_dice=0.723/0.455/0.052, val_iou=0.3821]ae_v1_rand:  22%|██▏       | 22/100 [05:26<18:23, 14.15s/it, val_dice=0.723/0.455/0.052, val_iou=0.3821]ae_v1_rand:  22%|██▏       | 22/100 [05:40<18:23, 14.15s/it, val_dice=0.700/0.463/0.056, val_iou=0.3630]ae_v1_rand:  23%|██▎       | 23/100 [05:40<18:04, 14.08s/it, val_dice=0.700/0.463/0.056, val_iou=0.3630]ae_v1_rand:  23%|██▎       | 23/100 [05:54<18:04, 14.08s/it, val_dice=0.718/0.461/0.056, val_iou=0.3728]ae_v1_rand:  24%|██▍       | 24/100 [05:54<17:46, 14.04s/it, val_dice=0.718/0.461/0.056, val_iou=0.3728]ae_v1_rand:  24%|██▍       | 24/100 [06:08<17:46, 14.04s/it, val_dice=0.715/0.462/0.041, val_iou=0.3730]ae_v1_rand:  25%|██▌       | 25/100 [06:08<17:31, 14.02s/it, val_dice=0.715/0.462/0.041, val_iou=0.3730]ae_v1_rand:  25%|██▌       | 25/100 [06:22<17:31, 14.02s/it, val_dice=0.707/0.459/0.060, val_iou=0.3738]ae_v1_rand:  26%|██▌       | 26/100 [06:22<17:16, 14.01s/it, val_dice=0.707/0.459/0.060, val_iou=0.3738]ae_v1_rand:  26%|██▌       | 26/100 [06:36<17:16, 14.01s/it, val_dice=0.724/0.466/0.045, val_iou=0.3822]ae_v1_rand:  27%|██▋       | 27/100 [06:36<17:02, 14.00s/it, val_dice=0.724/0.466/0.045, val_iou=0.3822]ae_v1_rand:  27%|██▋       | 27/100 [06:50<17:02, 14.00s/it, val_dice=0.722/0.467/0.049, val_iou=0.3746]ae_v1_rand:  28%|██▊       | 28/100 [06:50<16:50, 14.03s/it, val_dice=0.722/0.467/0.049, val_iou=0.3746]ae_v1_rand:  28%|██▊       | 28/100 [07:04<16:50, 14.03s/it, val_dice=0.718/0.469/0.054, val_iou=0.3852]ae_v1_rand:  29%|██▉       | 29/100 [07:04<16:34, 14.01s/it, val_dice=0.718/0.469/0.054, val_iou=0.3852]ae_v1_rand:  29%|██▉       | 29/100 [07:18<16:34, 14.01s/it, val_dice=0.730/0.462/0.044, val_iou=0.3820]ae_v1_rand:  29%|██▉       | 29/100 [07:18<17:54, 15.13s/it, val_dice=0.730/0.462/0.044, val_iou=0.3820]
+wandb: updating run metadata
+wandb: uploading config.yaml
+wandb: 
+wandb: Run history:
+wandb:             epoch ▁▁▁▂▂▂▂▃▃▃▃▄▄▄▄▅▅▅▅▆▆▆▆▇▇▇▇███
+wandb:                lr ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:  train/dice_Other ▂▂▂▁▂▃▄▄▆▅▅▅▅▅▇█▆▆▅▅▅▆▇▆██▇██▇
+wandb: train/dice_Stroma ▁▅▇▅▅▇▆▆▇▆▆▆▆▆▆▇▆▆▅▅▇▇▇▆█▆▆▇▇▇
+wandb:  train/dice_Tumor ▁▄▅▅▅▆▆▅▆▆▆▇▅▅▆▇▆▇▆▇▆▇▇▇███▇▇█
+wandb:        train/loss █▆▄▅▄▃▄▄▃▃▃▃▃▃▃▂▃▂▃▃▂▂▂▂▁▂▂▂▂▂
+wandb:        train/mIoU ▁▃▄▄▄▅▅▅▆▆▅▆▅▅▆▇▆▇▆▆▇▇▇▇████▇█
+wandb:    val/dice_Other ▂▁▃▁▁▃▂▆▄▃▅▇▅▆▆▄▆▆▆▇▆▆▇▇▄█▅▆▇▅
+wandb:   val/dice_Stroma ▁▄▅▆▅▆▆▆▆▆▆▆▇▇▆▇▇▆▆▆▅▇▇▇▇▇███▇
+wandb:    val/dice_Tumor ▃▁▂▃▂▁▂▃▂▂▃▃▄▄▄▃▃▆▄█▄▆▄▆▅▅▆▆▆▆
+wandb:                +2 ...
+wandb: 
+wandb: Run summary:
+wandb:        best_epoch 20
+wandb:     best_val_mIoU 0.39907
+wandb:             epoch 30
+wandb:                lr 0.0001
+wandb:  train/dice_Other 0.21121
+wandb: train/dice_Stroma 0.70008
+wandb:  train/dice_Tumor 0.79446
+wandb:        train/loss 2.5832
+wandb:        train/mIoU 0.52095
+wandb:    val/dice_Other 0.0444
+wandb:                +4 ...
+wandb: 
+wandb: 🚀 View run ae_v1_rand at: https://wandb.ai/adi-zin/tissue-segmentation/runs/usskbewb
+wandb: ⭐️ View project at: https://wandb.ai/adi-zin/tissue-segmentation
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: ./wandb/run-20260402_160932-usskbewb/logs
+Early stopping at epoch 30
+Fine-tuning complete. Best val mIoU: 0.3991
