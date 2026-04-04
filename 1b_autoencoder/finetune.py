@@ -1,5 +1,5 @@
-"""Fine-tuning: frozen encoder + trainable SegDecoder."""
-import argparse
+"""Autoencoder fine-tuning: frozen encoder + trainable SegDecoder."""
+import random
 import sys
 from pathlib import Path
 
@@ -7,221 +7,220 @@ _HERE = Path(__file__).parent
 sys.path.insert(0, str(_HERE))
 sys.path.insert(0, str(_HERE.parent / "1_shared"))
 
+import numpy as np
 import torch
 import torch.nn.functional as F
-import torch.optim as optim
 import wandb
-from torch.utils.data import DataLoader, WeightedRandomSampler
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from arch import Autoencoder
 from data_processing import TissueDataset
-from losses import DiceLoss, build_primary_criterion, CLASS_WEIGHTS
+from losses import build_criterion
 
 DATA_ROOT = _HERE.parent.parent / "Coumputer_Vision_Mini_Project_Data" / "Dataset_Splits"
-RUNS_DIR  = _HERE / "checkpoints"
+CKPT_DIR  = _HERE / "checkpoints"
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else
                       "mps"  if torch.backends.mps.is_available() else "cpu")
 
+CLASS_NAMES = ["Tumor", "Stroma", "Other"]
+
 
 # ---------------------------------------------------------------------------
-# Reuse metric helpers from 1a_unet/train.py
+# Reproducibility
 # ---------------------------------------------------------------------------
-def compute_iou(preds, targets, num_classes=3):
-    ious = []
-    preds, targets = preds.view(-1), targets.view(-1)
-    for cls in range(num_classes):
-        pred_c, target_c = preds == cls, targets == cls
-        intersection = (pred_c & target_c).sum().item()
-        union        = (pred_c | target_c).sum().item()
-        if union > 0:
-            ious.append(intersection / union)
-    return sum(ious) / len(ious) if ious else 0.0
+
+def set_seed(seed: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark     = False
 
 
-def compute_dice_per_class(preds, targets, num_classes=3):
-    if preds.dim() == 2:
-        preds, targets = preds.unsqueeze(0), targets.unsqueeze(0)
-    totals, counts = [0.0] * num_classes, [0] * num_classes
+# ---------------------------------------------------------------------------
+# Metrics
+# ---------------------------------------------------------------------------
+
+def _dice_per_class(preds: torch.Tensor, targets: torch.Tensor) -> list[float]:
+    """Per-image Dice, skipping absent classes. Returns list of 3 floats."""
+    totals, counts = [0.0] * 3, [0] * 3
     for b in range(preds.shape[0]):
         p, t = preds[b].view(-1), targets[b].view(-1)
-        for cls in range(num_classes):
-            pred_c, target_c = p == cls, t == cls
-            denom = pred_c.sum().item() + target_c.sum().item()
+        for c in range(3):
+            pred_c, tgt_c = p == c, t == c
+            denom = pred_c.sum().item() + tgt_c.sum().item()
             if denom > 0:
-                totals[cls] += 2 * (pred_c & target_c).sum().item() / denom
-                counts[cls] += 1
-    return [totals[c] / counts[c] if counts[c] > 0 else 0.0 for c in range(num_classes)]
+                totals[c] += 2 * (pred_c & tgt_c).sum().item() / denom
+                counts[c] += 1
+    return [totals[c] / counts[c] if counts[c] > 0 else 0.0 for c in range(3)]
 
 
 # ---------------------------------------------------------------------------
-# Fine-tune
+# Entry point
 # ---------------------------------------------------------------------------
 
-def finetune(args):
-    model_dir = RUNS_DIR / args.run_name
-    model_dir.mkdir(parents=True, exist_ok=True)
-    best_path = model_dir / "ae_finetune_best.pt"
-    last_path = model_dir / "ae_finetune_last.pt"
+def finetune(config: dict) -> None:
+    """Fine-tune the SegDecoder on top of a frozen pre-trained encoder."""
+    set_seed(config["seed"])
 
-    print(f"Device: {DEVICE}")
-    print(f"Run: {args.run_name}")
+    exp_name  = config["name"]
+    run_dir   = CKPT_DIR / exp_name
+    run_dir.mkdir(parents=True, exist_ok=True)
+    best_path = run_dir / "ae_finetune_best.pt"
+    last_path = run_dir / "ae_finetune_last.pt"
 
-    # Build model in finetune mode
-    model = Autoencoder(mode="finetune", base=64, use_residual=args.use_residual).to(DEVICE)
+    print(f"\nDevice    : {DEVICE}")
+    print(f"Finetune  : {exp_name}")
+    print(f"Config    : {config}")
 
-    # Load pretrained encoder weights
-    pretrain_ckpt = RUNS_DIR / args.pretrain_run / "ae_best.pt"
+    # --- Build model ---
+    model = Autoencoder(mode="finetune", base=64,
+                        use_residual=config["use_residual"],
+                        use_deep_sup=config["use_deep_sup"],
+                        norm_type=config["norm_type"],
+                        dropout=config["dropout_p"]).to(DEVICE)
+
+    # Load encoder from pretrain checkpoint
+    pretrain_ckpt = CKPT_DIR / config["pretrain_name"] / "ae_best.pt"
     if not pretrain_ckpt.exists():
-        raise FileNotFoundError(f"No pretrain checkpoint found at {pretrain_ckpt}")
-    state = torch.load(pretrain_ckpt, map_location=DEVICE)
-    # Extract only encoder keys
-    enc_state = {k[len("encoder."):]: v for k, v in state.items() if k.startswith("encoder.")}
-    model.encoder.load_state_dict(enc_state)
-    print(f"Loaded encoder weights from {pretrain_ckpt}")
+        raise FileNotFoundError(f"Pre-train checkpoint not found: {pretrain_ckpt}")
+    state    = torch.load(pretrain_ckpt, map_location=DEVICE)
+    enc_keys = {k[len("encoder."):]: v for k, v in state.items() if k.startswith("encoder.")}
+    model.encoder.load_state_dict(enc_keys)
+    print(f"Loaded encoder from {pretrain_ckpt}")
 
     # Freeze encoder
     for p in model.encoder.parameters():
         p.requires_grad = False
     print("Encoder frozen.")
 
-    # Optionally init SegDecoder from UNet checkpoint
-    if args.unet_dec_init:
-        unet_ckpt = _HERE.parent / "1a_unet" / "checkpoints" / args.unet_dec_run / "unet_tissue_best.pt"
-        unet_state = torch.load(unet_ckpt, map_location=DEVICE)
-        dec_keys   = {k: v for k, v in unet_state.items()
-                      if k.startswith(("up1.", "up2.", "up3.", "up4.", "last_conv.", "aux1.", "aux2.", "aux3."))}
-        missing, unexpected = model.seg_decoder.load_state_dict(dec_keys, strict=False)
-        print(f"Loaded SegDecoder from UNet checkpoint ({unet_ckpt.name}). Missing: {missing}")
+    # --- Data ---
+    train_ds = TissueDataset(DATA_ROOT / "train",      augment=True,
+                             augment_hed=config["augment_hed"], img_size=config["img_size"])
+    val_ds   = TissueDataset(DATA_ROOT / "validation", augment=False, img_size=config["img_size"])
+    print(f"Train: {len(train_ds)}  |  Val: {len(val_ds)}")
 
-    img_size      = getattr(args, "img_size", 512)
-    train_dataset = TissueDataset(DATA_ROOT / "train",      augment=True,  img_size=img_size)
-    val_dataset   = TissueDataset(DATA_ROOT / "validation", augment=False, img_size=img_size)
-    print(f"Train: {len(train_dataset)}  |  Val: {len(val_dataset)}")
+    train_loader = DataLoader(train_ds, batch_size=config["batch_size"],
+                              shuffle=True,  num_workers=2, pin_memory=True)
+    val_loader   = DataLoader(val_ds,   batch_size=config["batch_size"],
+                              shuffle=False, num_workers=2, pin_memory=True)
 
-    sample_weights = train_dataset.get_sample_weights(
-        cache_path=DATA_ROOT / "train" / "sample_weights.npy"
-    )
-    sampler      = WeightedRandomSampler(sample_weights, len(train_dataset), replacement=True)
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, sampler=sampler,  num_workers=2, pin_memory=True)
-    val_loader   = DataLoader(val_dataset,   batch_size=args.batch_size, shuffle=False,    num_workers=2, pin_memory=True)
-
-    # Only optimise SegDecoder parameters
-    optimizer         = optim.AdamW(model.seg_decoder.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-    scheduler         = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="max", factor=0.5, patience=10)
-    criterion_primary = build_primary_criterion("focal", 2.0, False, DEVICE)
-    criterion_dice    = DiceLoss(num_classes=3)
+    # --- Optimiser & loss (SegDecoder params only) ---
+    optimizer = torch.optim.AdamW(model.seg_decoder.parameters(),
+                                  lr=config["lr"], weight_decay=config["weight_decay"])
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode="min", factor=0.5, patience=10)
+    criterion = build_criterion(config["loss_type"], config["use_class_weights"],
+                                config["loss_lambda"], DEVICE)
 
     wandb.init(
-        project="tissue-segmentation",
-        name=args.run_name,
-        config={
-            "phase":          "finetune",
-            "pretrain_run":   args.pretrain_run,
-            "unet_dec_init":  args.unet_dec_init,
-            "use_residual":   args.use_residual,
-            "img_size":       img_size,
-            "batch_size":     args.batch_size,
-            "epochs":         args.epochs,
-            "lr":             args.lr,
-            "weight_decay":   args.weight_decay,
-            "loss":           "focal + 2.0*Dice",
+        project = "tissue-segmentation",
+        name    = exp_name,
+        config  = {
+            "stage":            "finetune",
+            "pretrain_name":    config["pretrain_name"],
+            "pretrain_masked":  config["pretrain_masked"],
+            "norm_type":        config["norm_type"],
+            "use_residual":     config["use_residual"],
+            "use_deep_sup":     config["use_deep_sup"],
+            "dropout_p":        config["dropout_p"],
+            "augment_hed":      config["augment_hed"],
+            "loss_type":        config["loss_type"],
+            "use_class_weights":config["use_class_weights"],
+            "loss_lambda":      config["loss_lambda"],
+            "img_size":         config["img_size"],
+            "batch_size":       config["batch_size"],
+            "epochs":           config["finetune_epochs"],
+            "lr":               config["lr"],
+            "seed":             config["seed"],
         },
     )
 
-    best_val_iou      = 0.0
+    best_val_loss     = float("inf")
     epochs_no_improve = 0
-    CLASS_NAMES       = ["Tumor", "Stroma", "Other"]
 
-    def seg_loss(o, t):
-        return criterion_primary(o, t) + 2.0 * criterion_dice(o, t)
+    def _loss_with_deep_sup(outputs, masks):
+        out, aux1, aux2, aux3 = outputs
+        sz = masks.shape[-2:]
+        up = lambda t: F.interpolate(t, size=sz, mode="bilinear", align_corners=False)
+        return (      criterion(out,       masks)
+                + 0.5   * criterion(up(aux1), masks)
+                + 0.25  * criterion(up(aux2), masks)
+                + 0.125 * criterion(up(aux3), masks))
 
-    epoch_bar = tqdm(range(args.epochs), desc=args.run_name)
+    epoch_bar = tqdm(range(config["finetune_epochs"]), desc=exp_name)
     for epoch in epoch_bar:
         # --- train ---
         model.train()
-        train_loss, train_iou, train_dice, n = 0.0, 0.0, [0.0]*3, 0
+        train_loss, train_dice, n = 0.0, [0.0] * 3, 0
         for images, masks in train_loader:
             images, masks = images.to(DEVICE), masks.to(DEVICE)
             outputs = model(images)
-            out_final, out_aux1, out_aux2, out_aux3 = outputs
-            target_size = masks.shape[-2:]
-            def up(t): return F.interpolate(t, size=target_size, mode="bilinear", align_corners=False)
-            loss = (seg_loss(out_final, masks)
-                  + 0.5   * seg_loss(up(out_aux1), masks)
-                  + 0.25  * seg_loss(up(out_aux2), masks)
-                  + 0.125 * seg_loss(up(out_aux3), masks))
-            optimizer.zero_grad(); loss.backward(); optimizer.step()
-            preds = out_final.argmax(dim=1).cpu()
+            if isinstance(outputs, tuple):   # deep supervision on
+                loss  = _loss_with_deep_sup(outputs, masks)
+                preds = outputs[0].argmax(dim=1).cpu()
+            else:
+                loss  = criterion(outputs, masks)
+                preds = outputs.argmax(dim=1).cpu()
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
             train_loss += loss.item()
-            train_iou  += compute_iou(preds, masks.cpu())
-            for c, d in enumerate(compute_dice_per_class(preds, masks.cpu())):
+            for c, d in enumerate(_dice_per_class(preds, masks.cpu())):
                 train_dice[c] += d
             n += 1
-        train_loss /= n; train_iou /= n; train_dice = [d/n for d in train_dice]
+
+        train_loss /= n
+        train_dice  = [d / n for d in train_dice]
 
         # --- val ---
         model.eval()
-        val_loss, val_iou, val_dice, n = 0.0, 0.0, [0.0]*3, 0
+        val_loss, val_dice, n = 0.0, [0.0] * 3, 0
         with torch.no_grad():
             for images, masks in val_loader:
                 images, masks = images.to(DEVICE), masks.to(DEVICE)
-                out_final = model(images)
-                if isinstance(out_final, tuple):
-                    out_final = out_final[0]
-                loss  = seg_loss(out_final, masks)
-                preds = out_final.argmax(dim=1).cpu()
-                val_loss += loss.item()
-                val_iou  += compute_iou(preds, masks.cpu())
-                for c, d in enumerate(compute_dice_per_class(preds, masks.cpu())):
+                logits = model(images)       # plain tensor during eval
+                val_loss += criterion(logits, masks).item()
+                preds    = logits.argmax(dim=1).cpu()
+                for c, d in enumerate(_dice_per_class(preds, masks.cpu())):
                     val_dice[c] += d
                 n += 1
-        val_loss /= n; val_iou /= n; val_dice = [d/n for d in val_dice]
 
-        scheduler.step(val_iou)
-        epoch_bar.set_postfix(val_iou=f"{val_iou:.4f}", val_dice=f"{val_dice[0]:.3f}/{val_dice[1]:.3f}/{val_dice[2]:.3f}")
+        val_loss /= n
+        val_dice  = [d / n for d in val_dice]
+        val_avg_dice = float(np.mean(val_dice))
+
+        scheduler.step(val_loss)
+        epoch_bar.set_postfix(
+            val_loss=f"{val_loss:.4f}",
+            val_dice=f"{val_dice[0]:.3f}/{val_dice[1]:.3f}/{val_dice[2]:.3f}",
+        )
         wandb.log({
-            "epoch":      epoch + 1,
-            "train/loss": train_loss, "train/mIoU": train_iou,
-            "val/loss":   val_loss,   "val/mIoU":   val_iou,
-            "lr":         optimizer.param_groups[0]["lr"],
+            "epoch":        epoch + 1,
+            "train/loss":   train_loss,
+            "val/loss":     val_loss,
+            "val/avg_dice": val_avg_dice,
+            "lr":           optimizer.param_groups[0]["lr"],
             **{f"train/dice_{n}": train_dice[i] for i, n in enumerate(CLASS_NAMES)},
             **{f"val/dice_{n}":   val_dice[i]   for i, n in enumerate(CLASS_NAMES)},
         })
 
-        if val_iou > best_val_iou:
-            best_val_iou      = val_iou
+        if val_loss < best_val_loss:
+            best_val_loss     = val_loss
             epochs_no_improve = 0
             torch.save(model.state_dict(), best_path)
-            wandb.run.summary["best_val_mIoU"] = best_val_iou
+            wandb.run.summary["best_val_loss"] = best_val_loss
             wandb.run.summary["best_epoch"]    = epoch + 1
         else:
             epochs_no_improve += 1
-            if epochs_no_improve >= args.early_stop_patience:
-                print(f"Early stopping at epoch {epoch+1}")
+            if epochs_no_improve >= config["early_stop_patience"]:
+                print(f"Early stopping at epoch {epoch + 1}")
                 break
 
     torch.save(model.state_dict(), last_path)
     wandb.finish()
-    print(f"Fine-tuning complete. Best val mIoU: {best_val_iou:.4f}")
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--run-name",            type=str,   required=True)
-    parser.add_argument("--pretrain-run",        type=str,   required=True,
-                        help="name of the pretrain checkpoint dir to load encoder from")
-    parser.add_argument("--unet-dec-init",       action="store_true",
-                        help="init SegDecoder weights from the best UNet checkpoint")
-    parser.add_argument("--unet-dec-run",        type=str,   default="unet_v1_perdice",
-                        help="which UNet run to copy decoder weights from")
-    parser.add_argument("--use-residual",        action="store_true")
-    parser.add_argument("--img-size",            type=int,   default=512)
-    parser.add_argument("--epochs",              type=int,   default=100)
-    parser.add_argument("--batch-size",          type=int,   default=8)
-    parser.add_argument("--lr",                  type=float, default=1e-4)
-    parser.add_argument("--weight-decay",        type=float, default=1e-2)
-    parser.add_argument("--early-stop-patience", type=int,   default=25)
-    args = parser.parse_args()
-    finetune(args)
+    print(f"\nFine-tuning done. Best val loss: {best_val_loss:.4f}")
+    print(f"Checkpoints → {run_dir}")

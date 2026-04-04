@@ -25,6 +25,9 @@
 | 96 base + all improvements | 0.822 | 0.353 | 0.066 | **0.414** | direct |
 | 64 base + per-image Dice loss | 0.815 | 0.352 | 0.081 | **0.416** | direct |
 | unet_v2_resid (residual decoder) | 0.856 | 0.473 | 0.055 | **0.461** | direct |
+| unet_v3_1024 (no residual, 1024) | 0.847 | 0.320 | 0.041 | 0.402 | direct |
+| unet_v4_256 (residual, 256) | 0.848 | 0.192 | 0.034 | 0.358 | direct |
+| unet_v5_1024 (residual, 1024) | 0.857 | 0.344 | 0.114 | **0.438** | direct |
 
 ---
 
@@ -100,6 +103,25 @@
 - **New:** Filter counts scaled from 64 base to 96 base (64→128→256→512→1024 to 96→192→384→768→1536)
 - ~70M parameters vs ~31M previously
 - *Clear improvement in Other (0.077) — first run above 0.40 avg Dice*
+
+### No residual at 1024px (`unet_v3_1024`)
+- **New:** Input resized to 1024×1024, batch_size=2
+- No residual decoder (plain UNet decoder, same as v1 architecture)
+- All else same as v2_resid baseline: focal unweighted (γ=2), 2×Dice, AdamW (lr=1e-4, wd=1e-2), 100 epochs, early stop patience=25
+- *Below v2_resid across all classes — confirms residual connections are important, not just image size*
+
+### Residual decoder at 256px (`unet_v4_256`)
+- **New:** Input resized to 256×256, batch_size=32
+- Residual decoder (same as v2_resid)
+- All else same as v3_1024
+- *Weakest run — Stroma (0.192) and Other (0.034) collapsed; 256px too small to preserve tissue structure detail*
+
+### Residual decoder at 1024px (`unet_v5_1024`)
+- **New:** Input resized to 1024×1024, batch_size=2
+- Residual decoder (same as v2_resid)
+- All else same as v3_1024
+- Early stopped at epoch 84 (patience=25)
+- *Best Other score yet (0.114); Stroma (0.344) and Tumor (0.857) solid — higher resolution helps rare class; but below v2_resid avg (0.438 vs 0.461)*
 
 ### Residual decoder (`unet_v2_resid`)
 - **New:** ResidualUpLayer in all 4 decoder blocks — 1×1 conv shortcut from concatenated features to block output
