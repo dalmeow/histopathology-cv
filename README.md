@@ -1,36 +1,36 @@
 # Histopathology CV
 
-Histopathology image analysis on the Computer Vision Mini Project dataset.
+Tissue segmentation on the Computer Vision Mini Project dataset.  
+3-class pixel-wise classification: **Tumor / Stroma / Other**.
 
-## Tasks
+## Results Summary
 
-| Task | Description | Status |
-|------|-------------|--------|
-| Task 1 | Tissue segmentation (Tumor / Stroma / Other) | Done — 0.416 avg Dice |
-| Task 2 | Nuclei classification (Tumor / Lymphocyte / Histiocyte) | In progress |
+| Model | Best Avg Dice | Tumor | Stroma | Other |
+|-------|--------------|-------|--------|-------|
+| UNet exp5 (Focal + Lovász) | **0.463** | 0.840 | 0.404 | 0.147 |
+| UNet exp5 + CRF | **0.492** | — | — | — |
+| AE exp2 (MSE pretrain + full finetune) | 0.406 | 0.829 | 0.336 | 0.051 |
+| Baseline (provided) | 0.467 | — | — | — |
 
 ## Repo Structure
 
 ```
 histopathology-cv/
-├── 1_shared/                 # Shared data pipeline and losses
-│   ├── data_processing.py    # TissueDataset, HED augmentation, TTA, sampling weights
-│   └── losses.py             # FocalLoss, DiceLoss, build_primary_criterion
+├── 1_shared/              # Shared data pipeline and losses
+│   ├── data_processing.py # TissueDataset, GeoJSON→mask, HED augmentation
+│   └── losses.py          # FocalLoss, LovászSoftmax, DiceLoss, build_criterion
 │
-├── 0_data_exploration/       # Dataset analysis (not needed for training)
-│   ├── task1.py
-│   ├── task2.py
-│   └── output/
-│       ├── task1/
-│       └── task2/
+├── 0_data_exploration/    # Dataset analysis notebooks
 │
-├── 1a_unet/                  # Task 1 — UNet segmentation
-└── 1b_autoencoder/           # Task 1 — Autoencoder pre-training experiments
+├── 1a_unet/               # Task 1a — UNet end-to-end segmentation (6 experiments)
+└── 1b_autoencoder/        # Task 1b — Autoencoder pre-training + SegDecoder (4 experiments)
 ```
+
+See [1a_unet/README.md](1a_unet/README.md) and [1b_autoencoder/README.md](1b_autoencoder/README.md) for full ablation tables, architecture details, and usage.
 
 ## Data
 
-Expected at `../Coumputer_Vision_Mini_Project_Data/Dataset_Splits/` relative to this directory, with `train/`, `validation/`, and `test/` splits each containing `image/` and `tissue/` subdirectories.
+Expected at `../Coumputer_Vision_Mini_Project_Data/Dataset_Splits/` relative to this repo, with `train/`, `validation/`, and `test/` splits each containing `image/` and `tissue/` subdirectories.
 
 ## Setup
 
