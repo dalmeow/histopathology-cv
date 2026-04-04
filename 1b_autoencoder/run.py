@@ -36,13 +36,12 @@ from eval     import evaluate
 # is independently readable.
 #
 # Ablation story (2×2):
-#   exp1       : AE baseline — vanilla pretrain + vanilla finetune
-#   exp1→exp2  : pretrain objective only changes (vanilla MSE → masked MAE),
-#                finetune kept identical — isolates encoder strategy
-#   exp1→exp4  : finetune quality only changes (all UNet learnings applied),
+#   exp1       : AE baseline — vanilla MSE pretrain + vanilla CE finetune
+#   exp1→exp2  : finetune quality only changes (all UNet learnings applied),
 #                pretrain stays vanilla MSE — isolates finetune improvements
-#   exp4→exp3  : pretrain objective changes (MSE → masked MAE),
-#                finetune kept identical to exp4 — completes the 2×2
+#   exp1→exp3  : pretrain objective only changes (vanilla MSE → masked MAE),
+#                finetune kept identical to exp1 — isolates encoder strategy
+#   exp2+exp3→exp4 : both combined — masked MAE pretrain + full finetune
 
 EXPERIMENTS = {
     "1": dict(
@@ -57,7 +56,7 @@ EXPERIMENTS = {
         dropout_p          = 0.0,
         # Augmentation
         augment_hed        = False,
-        # Loss: plain CE — mirrors UNet exp1
+        # Loss: plain CE
         loss_type          = "ce",
         use_class_weights  = False,
         loss_lambda        = 0.0,
@@ -72,7 +71,33 @@ EXPERIMENTS = {
         seed               = 42,
     ),
     "2": dict(
-        name               = "ae_exp2_masked",
+        name               = "ae_exp2_mse_full",
+        # Pre-train: vanilla MSE, InstanceNorm + HED — same pretrain strategy as exp1, full finetune
+        pretrain_name      = "ae_pretrain_mse_instance",
+        pretrain_masked    = False,
+        # Architecture: + InstanceNorm + residual decoder + deep supervision + dropout
+        norm_type          = "instance",
+        use_residual       = True,
+        use_deep_sup       = True,
+        dropout_p          = 0.3,
+        # Augmentation: + HED stain aug
+        augment_hed        = True,
+        # Loss: Focal + Lovász (mirrors UNet exp5)
+        loss_type          = "focal+lovasz",
+        use_class_weights  = False,
+        loss_lambda        = 2.0,
+        # Training
+        img_size           = 512,
+        batch_size         = 8,
+        pretrain_epochs    = 100,
+        finetune_epochs    = 100,
+        early_stop_patience= 25,
+        lr                 = 1e-4,
+        weight_decay       = 1e-2,
+        seed               = 42,
+    ),
+    "3": dict(
+        name               = "ae_exp3_masked",
         # Pre-train: masked MAE, BatchNorm — same finetune as exp1, only pretrain changes
         pretrain_name      = "ae_pretrain_masked_batch",
         pretrain_masked    = True,
@@ -97,45 +122,19 @@ EXPERIMENTS = {
         weight_decay       = 1e-2,
         seed               = 42,
     ),
-    "3": dict(
-        name               = "ae_exp3_full",
-        # Pre-train: masked MAE, InstanceNorm + HED — all UNet learnings applied
+    "4": dict(
+        name               = "ae_exp4_masked_full",
+        # Pre-train: masked MAE, InstanceNorm + HED — identical to exp2 but with masked pretrain
         pretrain_name      = "ae_pretrain_masked_instance",
         pretrain_masked    = True,
-        # Architecture: + InstanceNorm + residual decoder + deep supervision + dropout
+        # Architecture: identical to exp2
         norm_type          = "instance",
         use_residual       = True,
         use_deep_sup       = True,
         dropout_p          = 0.3,
-        # Augmentation: + HED stain aug
+        # Augmentation: identical to exp2
         augment_hed        = True,
-        # Loss: Focal + Lovász (mirrors UNet exp5)
-        loss_type          = "focal+lovasz",
-        use_class_weights  = False,
-        loss_lambda        = 2.0,
-        # Training
-        img_size           = 512,
-        batch_size         = 8,
-        pretrain_epochs    = 100,
-        finetune_epochs    = 100,
-        early_stop_patience= 25,
-        lr                 = 1e-4,
-        weight_decay       = 1e-2,
-        seed               = 42,
-    ),
-    "4": dict(
-        name               = "ae_exp4_mse_full",
-        # Pre-train: vanilla MSE, InstanceNorm + HED — identical to exp3 except no masking
-        pretrain_name      = "ae_pretrain_mse_instance",
-        pretrain_masked    = False,
-        # Architecture: identical to exp3
-        norm_type          = "instance",
-        use_residual       = True,
-        use_deep_sup       = True,
-        dropout_p          = 0.3,
-        # Augmentation: identical to exp3
-        augment_hed        = True,
-        # Loss: identical to exp3
+        # Loss: identical to exp2
         loss_type          = "focal+lovasz",
         use_class_weights  = False,
         loss_lambda        = 2.0,
