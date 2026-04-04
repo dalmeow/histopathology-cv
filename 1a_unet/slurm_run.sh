@@ -10,7 +10,7 @@
 
 # Do not call this script directly.
 # Use submit.sh which sets --job-name per experiment:
-#   bash 1a_unet/submit.sh 1 2 3 4 5
+#   bash 1a_unet/submit.sh 1 2 3a 3b 4 5
 
 set -e
 

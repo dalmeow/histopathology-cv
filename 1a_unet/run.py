@@ -124,7 +124,7 @@ EXPERIMENTS = {
         seed               = 42,
     ),
     "4": dict(
-        name               = "exp4_full",
+        name               = "exp4_architecture",
         # Architecture: + deep supervision + residual decoder + dropout
         norm_type          = "instance",
         use_residual       = True,
@@ -136,9 +136,9 @@ EXPERIMENTS = {
         loss_type          = "ce+dice",
         use_class_weights  = True,
         loss_lambda        = 2.0,
-        # Data: + oversampling (from 3b)
-        other_threshold    = 0.10,
-        other_oversample_k = 2,
+        # Data: no oversampling
+        other_threshold    = 0.0,
+        other_oversample_k = 0,
         # Training
         img_size           = 512,
         batch_size         = 8,
@@ -147,7 +147,7 @@ EXPERIMENTS = {
         seed               = 42,
     ),
     "5": dict(
-        name               = "exp5_full",
+        name               = "exp5_lovasz",
         # Architecture
         norm_type          = "instance",
         use_residual       = True,
@@ -159,9 +159,9 @@ EXPERIMENTS = {
         loss_type          = "focal+lovasz",
         use_class_weights  = False,
         loss_lambda        = 2.0,
-        # Data: + oversampling (from 3b)
-        other_threshold    = 0.10,
-        other_oversample_k = 2,
+        # Data: no oversampling
+        other_threshold    = 0.0,
+        other_oversample_k = 0,
         # Training
         img_size           = 512,
         batch_size         = 8,

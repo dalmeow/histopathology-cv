@@ -1,10 +1,9 @@
 #!/bin/bash
 # Submit AE experiments as parallel SLURM jobs.
 #
-# Usage: bash 1b_autoencoder/submit.sh 1 2 3
+# Usage: bash 1b_autoencoder/submit.sh 1 2 3 4
 #
-# Each experiment has its own independent pre-train checkpoint, so all three
-# can be submitted simultaneously without any race condition.
+# All four have independent pretrain checkpoints and can be submitted simultaneously.
 
 set -e
 

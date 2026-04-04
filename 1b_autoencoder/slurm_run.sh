@@ -23,4 +23,6 @@ echo "Args:   $@"
 
 nvidia-smi
 
-python 1b_autoencoder/run.py "$@"
+mkdir -p 1b_autoencoder/logs
+
+python 1b_autoencoder/run.py "$@" 2>&1 | tee "1b_autoencoder/logs/${SLURM_JOB_ID}_${SLURM_JOB_NAME}.log"

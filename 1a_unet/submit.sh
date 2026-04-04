@@ -2,14 +2,14 @@
 # Submit ablation experiments as parallel SLURM jobs.
 #
 # Usage:
-#   bash 1a_unet/submit.sh 1 2 3 4 5   # submit all
-#   bash 1a_unet/submit.sh 4 5          # submit specific experiments
+#   bash 1a_unet/submit.sh 1 2 3a 3b 4 5   # submit all
+#   bash 1a_unet/submit.sh 4 5              # submit specific experiments
 
 set -e
 
 if [ $# -eq 0 ]; then
     echo "Usage: bash 1a_unet/submit.sh <exp1> [exp2] ..."
-    echo "  e.g. bash 1a_unet/submit.sh 1 2 3 4 5"
+    echo "  e.g. bash 1a_unet/submit.sh 1 2 3a 3b 4 5"
     exit 1
 fi
 

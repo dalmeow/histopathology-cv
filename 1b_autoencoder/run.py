@@ -35,12 +35,14 @@ from eval     import evaluate
 # Every field is written out explicitly — no inheritance — so each experiment
 # is independently readable.
 #
-# Ablation story:
+# Ablation story (2×2):
 #   exp1       : AE baseline — vanilla pretrain + vanilla finetune
 #   exp1→exp2  : pretrain objective only changes (vanilla MSE → masked MAE),
 #                finetune kept identical — isolates encoder strategy
-#   exp2→exp3  : finetune quality changes (all UNet learnings applied),
-#                pretrain stays masked MAE — isolates finetune improvements
+#   exp1→exp4  : finetune quality only changes (all UNet learnings applied),
+#                pretrain stays vanilla MSE — isolates finetune improvements
+#   exp4→exp3  : pretrain objective changes (MSE → masked MAE),
+#                finetune kept identical to exp4 — completes the 2×2
 
 EXPERIMENTS = {
     "1": dict(
@@ -121,6 +123,32 @@ EXPERIMENTS = {
         weight_decay       = 1e-2,
         seed               = 42,
     ),
+    "4": dict(
+        name               = "ae_exp4_mse_full",
+        # Pre-train: vanilla MSE, InstanceNorm + HED — identical to exp3 except no masking
+        pretrain_name      = "ae_pretrain_mse_instance",
+        pretrain_masked    = False,
+        # Architecture: identical to exp3
+        norm_type          = "instance",
+        use_residual       = True,
+        use_deep_sup       = True,
+        dropout_p          = 0.3,
+        # Augmentation: identical to exp3
+        augment_hed        = True,
+        # Loss: identical to exp3
+        loss_type          = "focal+lovasz",
+        use_class_weights  = False,
+        loss_lambda        = 2.0,
+        # Training
+        img_size           = 512,
+        batch_size         = 8,
+        pretrain_epochs    = 100,
+        finetune_epochs    = 100,
+        early_stop_patience= 25,
+        lr                 = 1e-4,
+        weight_decay       = 1e-2,
+        seed               = 42,
+    ),
 }
 
 CKPT_DIR = _HERE / "checkpoints"
@@ -136,7 +164,7 @@ def main():
     )
     parser.add_argument(
         "--exp", type=str, required=True, choices=list(EXPERIMENTS.keys()),
-        help="Experiment number to run (1–3).",
+        help="Experiment number to run (1–4).",
     )
     args = parser.parse_args()
 
