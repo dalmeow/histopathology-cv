@@ -13,7 +13,7 @@ _HERE = Path(__file__).parent
 sys.path.insert(0, str(_HERE))
 sys.path.insert(0, str(_HERE.parent / "1_shared"))
 
-from arch import Autoencoder
+from autoencoder import Autoencoder
 from data_processing import TissueDataset
 
 DATA_ROOT   = _HERE.parent.parent / "Coumputer_Vision_Mini_Project_Data" / "Dataset_Splits"

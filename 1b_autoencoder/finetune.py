@@ -14,7 +14,7 @@ import wandb
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from arch import Autoencoder
+from autoencoder import Autoencoder
 from data_processing import TissueDataset
 from losses import build_criterion
 

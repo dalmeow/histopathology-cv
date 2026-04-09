@@ -18,7 +18,7 @@ import wandb
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from arch import Autoencoder
+from autoencoder import Autoencoder
 from data_processing import TissueDataset
 
 DATA_ROOT = _HERE.parent.parent / "Coumputer_Vision_Mini_Project_Data" / "Dataset_Splits"

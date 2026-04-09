@@ -13,7 +13,7 @@ _HERE = Path(__file__).parent
 sys.path.insert(0, str(_HERE))
 sys.path.insert(0, str(_HERE.parent / "1_shared"))
 
-from arch import UNet
+from unet import UNet
 from data_processing import TissueDataset
 from losses import build_criterion
 
