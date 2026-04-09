@@ -21,8 +21,9 @@ _HERE = Path(__file__).parent
 sys.path.insert(0, str(_HERE))
 sys.path.insert(0, str(_HERE.parent / "1_shared"))
 
-from train import train
-from eval  import evaluate
+from train    import train
+from eval     import evaluate
+from eval_crf import evaluate_crf
 
 # ---------------------------------------------------------------------------
 # Experiment configs
@@ -169,6 +170,22 @@ EXPERIMENTS = {
         early_stop_patience= 25,
         seed               = 42,
     ),
+    "6": dict(
+        name               = "exp6_crf",
+        # Source: no training — applies CRF post-processing to exp5's best checkpoint
+        source_exp         = "exp5_lovasz",
+        # Architecture (must match exp5)
+        norm_type          = "instance",
+        use_residual       = True,
+        use_deep_sup       = True,
+        dropout_p          = 0.3,
+        # Data
+        img_size           = 512,
+        # CRF sweep grid
+        crf_sigma_spatial  = [3, 5, 10],
+        crf_sigma_colour   = [10, 30, 50],
+        crf_n_iters        = [3, 5, 10],
+    ),
 }
 
 # ---------------------------------------------------------------------------
@@ -179,15 +196,19 @@ def main():
     parser = argparse.ArgumentParser(description="Run a single ablation experiment (train + eval).")
     parser.add_argument(
         "--exp", type=str, required=True, choices=list(EXPERIMENTS.keys()),
-        help="Experiment key to run (1, 2, 3a, 3b, 4, 5).",
+        help="Experiment key to run (1, 2, 3a, 3b, 4, 5, 6).",
     )
     args = parser.parse_args()
 
     config = EXPERIMENTS[args.exp]
     print(f"Experiment {args.exp}: {config['name']}")
 
-    train(config)
-    evaluate(config)
+    if "source_exp" in config:
+        # Post-processing experiment — no training phase
+        evaluate_crf(config)
+    else:
+        train(config)
+        evaluate(config)
 
 
 if __name__ == "__main__":

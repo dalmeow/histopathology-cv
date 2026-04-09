@@ -16,7 +16,7 @@ set -e
 
 cd ~/cv/histopathology-cv
 
-source ~/cv/venv/bin/activate
+source ~/cv/venv_combined/bin/activate
 
 echo "Job ID : $SLURM_JOB_ID"
 echo "Node   : $SLURMD_NODENAME"
