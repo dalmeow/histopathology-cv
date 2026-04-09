@@ -20,8 +20,6 @@ histopathology-cv/
 │   ├── data_processing.py # TissueDataset, GeoJSON→mask, HED augmentation
 │   └── losses.py          # FocalLoss, LovászSoftmax, DiceLoss, build_criterion
 │
-├── 0_data_exploration/    # Dataset analysis notebooks
-│
 ├── 1a_unet/               # Task 1a — UNet end-to-end segmentation (6 experiments)
 └── 1b_autoencoder/        # Task 1b — Autoencoder pre-training + SegDecoder (4 experiments)
 ```
