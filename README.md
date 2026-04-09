@@ -8,7 +8,7 @@ Tissue segmentation on the Computer Vision Mini Project dataset.
 | Model | Best Avg Dice | Tumor | Stroma | Other |
 |-------|--------------|-------|--------|-------|
 | UNet exp5 (Focal + Lovász) | **0.463** | 0.840 | 0.404 | 0.147 |
-| UNet exp5 + CRF | **0.492** | — | — | — |
+| UNet exp5 + CRF | **0.502** | 0.841 | 0.512 | 0.154 |
 | AE exp2 (MSE pretrain + full finetune) | 0.406 | 0.829 | 0.336 | 0.051 |
 | Baseline (provided) | 0.467 | — | — | — |
 

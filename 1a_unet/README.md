@@ -14,8 +14,9 @@ All numbers are **best-checkpoint Dice** on the held-out test set (per-image, ab
 | exp3b — oversampling | data-level balance (negative result) | 0.835 | 0.406 | 0.048 | 0.430 |
 | exp4 — architecture | + residual decoder, deep sup, dropout | 0.840 | 0.352 | 0.018 | 0.403 |
 | **exp5 — Lovász** | + Focal + Lovász-Softmax loss | **0.840** | **0.404** | **0.147** | **0.463** |
+| exp6 — CRF | dense CRF post-processing on exp5 | 0.841 | 0.512 | 0.154 | **0.502** |
 
-CRF post-processing on exp5 best checkpoint: **avg Dice 0.492** (Stroma +0.077, Other unchanged).
+CRF post-processing on exp5 best checkpoint: **avg Dice 0.502** (Stroma +0.108, Other +0.007).
 
 ## Ablation Story
 
@@ -25,6 +26,7 @@ exp2  →  exp3a  : class imbalance via loss (weighted CE + Dice)
 exp2  →  exp3b  : class imbalance via data (oversampling) — worse than exp3a
 exp3a →  exp4   : architecture (residual decoder + deep supervision + dropout)
 exp4  →  exp5   : loss (Focal + Lovász replaces weighted CE + Dice)
+exp5  →  exp6   : inference-time CRF post-processing (no retraining)
 ```
 
 Each step changes exactly one axis. exp3b is kept as a negative result: the
@@ -39,11 +41,11 @@ oversampled images were white-background-heavy slides, not informative Other
 # Run a single experiment (train + eval):
 python 1a_unet/run.py --exp 5
 
-# Submit all experiments as parallel SLURM jobs:
-bash 1a_unet/submit.sh 1 2 3a 3b 4 5
+# Run CRF post-processing on exp5 checkpoint (exp6):
+python 1a_unet/run.py --exp 6
 
-# CRF post-processing on a trained checkpoint:
-python 1a_unet/eval_crf.py
+# Submit all experiments as parallel SLURM jobs:
+bash 1a_unet/submit.sh 1 2 3a 3b 4 5 6
 ```
 
 ## Files
@@ -54,6 +56,7 @@ python 1a_unet/eval_crf.py
 | `train.py` | Training loop (W&B logging, early stopping) |
 | `eval.py` | Test set evaluation — quantitative + qualitative |
 | `eval_crf.py` | Dense CRF post-processing on a saved checkpoint |
+| `colab_run.ipynb` | Colab notebook runner for the UNet experiments |
 | `arch/unet.py` | Model architecture |
 | `slurm_run.sh` | SLURM job script |
 | `submit.sh` | Submits one job per experiment in parallel |
