@@ -3,10 +3,6 @@ import torch.nn.functional as F
 from torch import nn
 
 
-# ---------------------------------------------------------------------------
-# Building blocks (duplicated from 1a_unet/arch/unet.py to avoid sys.path issues)
-# ---------------------------------------------------------------------------
-
 def _norm(norm_type: str, num_channels: int) -> nn.Module:
     if norm_type == "batch":
         return nn.BatchNorm2d(num_channels)
@@ -69,9 +65,7 @@ class ResidualUpLayer(nn.Module):
         return self.conv(a) + self.shortcut(a)
 
 
-# ---------------------------------------------------------------------------
 # Encoder  (identical to UNet encoder)
-# ---------------------------------------------------------------------------
 
 class Encoder(nn.Module):
     def __init__(self, base: int = 64, dropout: float = 0.3, norm_type: str = "instance"):
@@ -94,9 +88,7 @@ class Encoder(nn.Module):
         return x5
 
 
-# ---------------------------------------------------------------------------
 # ReconDecoder  (pre-training only — no skip connections)
-# ---------------------------------------------------------------------------
 
 class ReconDecoder(nn.Module):
     def __init__(self, base: int = 64, norm_type: str = "instance"):
@@ -116,9 +108,7 @@ class ReconDecoder(nn.Module):
         return self.out(x)
 
 
-# ---------------------------------------------------------------------------
 # SegDecoder  (fine-tuning — identical structure to UNet decoder)
-# ---------------------------------------------------------------------------
 
 class SegDecoder(nn.Module):
     def __init__(self, dimensions: int = 3, base: int = 64, dropout: float = 0.3,
@@ -149,9 +139,7 @@ class SegDecoder(nn.Module):
         return out
 
 
-# ---------------------------------------------------------------------------
 # Autoencoder
-# ---------------------------------------------------------------------------
 
 class Autoencoder(nn.Module):
     def __init__(self, mode: str = "pretrain", base: int = 64, dropout: float = 0.3,

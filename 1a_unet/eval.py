@@ -16,9 +16,6 @@ sys.path.insert(0, str(_HERE.parent / "1_shared"))
 from arch import UNet
 from data_processing import TissueDataset
 
-# ---------------------------------------------------------------------------
-# Paths / constants
-# ---------------------------------------------------------------------------
 
 DATA_ROOT   = _HERE.parent.parent / "Coumputer_Vision_Mini_Project_Data" / "Dataset_Splits"
 CKPT_DIR    = _HERE / "checkpoints"
@@ -36,9 +33,7 @@ STD  = np.array([0.1975, 0.1944, 0.1381])
 N_QUALITATIVE = 10
 
 
-# ---------------------------------------------------------------------------
 # Helpers
-# ---------------------------------------------------------------------------
 
 def _mask_to_rgb(mask: np.ndarray) -> np.ndarray:
     return CLASS_COLORS[mask]
@@ -59,9 +54,7 @@ def _build_model(config: dict) -> torch.nn.Module:
     ).to(DEVICE)
 
 
-# ---------------------------------------------------------------------------
 # Quantitative evaluation
-# ---------------------------------------------------------------------------
 
 def _compute_metrics(model: torch.nn.Module, loader: DataLoader) -> dict:
     """
@@ -119,9 +112,7 @@ def _print_metrics(metrics: dict, label: str) -> None:
     print(f"  {'Avg':<10s}  {metrics['avg_dice']:>8.4f}  {metrics['avg_iou']:>8.4f}")
 
 
-# ---------------------------------------------------------------------------
 # Qualitative evaluation
-# ---------------------------------------------------------------------------
 
 def _qualitative(
     model:    torch.nn.Module,
@@ -158,9 +149,7 @@ def _qualitative(
     print(f"  Saved qualitative grid → {out}")
 
 
-# ---------------------------------------------------------------------------
 # Summary CSV
-# ---------------------------------------------------------------------------
 
 _SUMMARY_FIELDS = [
     "name",
@@ -193,9 +182,7 @@ def _update_summary(name: str, best: dict, last: dict) -> None:
     print(f"\n  Summary updated → {SUMMARY_CSV}")
 
 
-# ---------------------------------------------------------------------------
 # Main entry point
-# ---------------------------------------------------------------------------
 
 def evaluate(config: dict) -> None:
     """

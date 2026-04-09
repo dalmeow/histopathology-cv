@@ -1,5 +1,5 @@
 #!/bin/bash
-# Submit ablation experiments as parallel SLURM jobs.
+# Submit experiments as parallel slurm jobs.
 #
 # Usage:
 #   bash 1a_unet/submit.sh 1 2 3a 3b 4 5   # submit all

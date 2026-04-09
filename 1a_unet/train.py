@@ -17,9 +17,6 @@ from arch import UNet
 from data_processing import TissueDataset
 from losses import build_criterion
 
-# ---------------------------------------------------------------------------
-# Paths
-# ---------------------------------------------------------------------------
 
 DATA_ROOT = _HERE.parent.parent / "Coumputer_Vision_Mini_Project_Data" / "Dataset_Splits"
 CKPT_DIR  = _HERE / "checkpoints"
@@ -30,9 +27,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else
 CLASS_NAMES = ["Tumor", "Stroma", "Other"]
 
 
-# ---------------------------------------------------------------------------
 # Reproducibility
-# ---------------------------------------------------------------------------
 
 def set_seed(seed: int) -> None:
     random.seed(seed)
@@ -43,9 +38,7 @@ def set_seed(seed: int) -> None:
     torch.backends.cudnn.benchmark     = False
 
 
-# ---------------------------------------------------------------------------
 # Metrics
-# ---------------------------------------------------------------------------
 
 def compute_dice_per_class(
     preds: torch.Tensor,
@@ -79,9 +72,7 @@ def compute_dice_per_class(
             for c in range(num_classes)]
 
 
-# ---------------------------------------------------------------------------
 # Epoch runner
-# ---------------------------------------------------------------------------
 
 def run_epoch(model, loader, criterion, optimizer=None):
     """
@@ -133,9 +124,7 @@ def run_epoch(model, loader, criterion, optimizer=None):
     return total_loss / n_batches, mean_dice
 
 
-# ---------------------------------------------------------------------------
 # Train
-# ---------------------------------------------------------------------------
 
 def train(config: dict) -> None:
     set_seed(config["seed"])

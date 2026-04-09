@@ -27,9 +27,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else
 CLASS_NAMES = ["Tumor", "Stroma", "Other"]
 
 
-# ---------------------------------------------------------------------------
 # Reproducibility
-# ---------------------------------------------------------------------------
 
 def set_seed(seed: int) -> None:
     random.seed(seed)
@@ -40,9 +38,7 @@ def set_seed(seed: int) -> None:
     torch.backends.cudnn.benchmark     = False
 
 
-# ---------------------------------------------------------------------------
 # Metrics
-# ---------------------------------------------------------------------------
 
 def _dice_per_class(preds: torch.Tensor, targets: torch.Tensor) -> list[float]:
     """Per-image Dice, skipping absent classes. Returns list of 3 floats."""
@@ -58,9 +54,7 @@ def _dice_per_class(preds: torch.Tensor, targets: torch.Tensor) -> list[float]:
     return [totals[c] / counts[c] if counts[c] > 0 else 0.0 for c in range(3)]
 
 
-# ---------------------------------------------------------------------------
 # Entry point
-# ---------------------------------------------------------------------------
 
 def finetune(config: dict) -> None:
     """Fine-tune the SegDecoder on top of a frozen pre-trained encoder."""
@@ -97,7 +91,7 @@ def finetune(config: dict) -> None:
         p.requires_grad = False
     print("Encoder frozen.")
 
-    # --- Data ---
+    # Data
     train_ds = TissueDataset(DATA_ROOT / "train",      augment=True,
                              augment_hed=config["augment_hed"], img_size=config["img_size"])
     val_ds   = TissueDataset(DATA_ROOT / "validation", augment=False, img_size=config["img_size"])
@@ -108,7 +102,7 @@ def finetune(config: dict) -> None:
     val_loader   = DataLoader(val_ds,   batch_size=config["batch_size"],
                               shuffle=False, num_workers=2, pin_memory=True)
 
-    # --- Optimiser & loss (SegDecoder params only) ---
+    # Optimiser & loss (SegDecoder params only)
     optimizer = torch.optim.AdamW(model.seg_decoder.parameters(),
                                   lr=config["lr"], weight_decay=config["weight_decay"])
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -153,7 +147,7 @@ def finetune(config: dict) -> None:
 
     epoch_bar = tqdm(range(config["finetune_epochs"]), desc=exp_name)
     for epoch in epoch_bar:
-        # --- train ---
+        # Train
         model.train()
         train_loss, train_dice, n = 0.0, [0.0] * 3, 0
         for images, masks in train_loader:
@@ -176,7 +170,7 @@ def finetune(config: dict) -> None:
         train_loss /= n
         train_dice  = [d / n for d in train_dice]
 
-        # --- val ---
+        # Val
         model.eval()
         val_loss, val_dice, n = 0.0, [0.0] * 3, 0
         with torch.no_grad():

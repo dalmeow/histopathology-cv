@@ -9,9 +9,6 @@ import torch
 from torch.utils.data import Dataset
 from torchvision import transforms
 
-# ---------------------------------------------------------------------------
-# Constants
-# ---------------------------------------------------------------------------
 
 CLASS_MAP = {
     "tissue_tumor":            0,
@@ -31,9 +28,7 @@ NORMALIZE = transforms.Normalize(
 )
 
 
-# ---------------------------------------------------------------------------
 # Mask generation
-# ---------------------------------------------------------------------------
 
 def geojson_to_mask(geo_path: Path, height: int, width: int) -> np.ndarray:
     """Rasterize tissue polygons into a (H, W) integer mask."""
@@ -67,9 +62,7 @@ def geojson_to_mask(geo_path: Path, height: int, width: int) -> np.ndarray:
     return mask
 
 
-# ---------------------------------------------------------------------------
 # Augmentation helpers
-# ---------------------------------------------------------------------------
 
 _RGB_FROM_HED = np.array([[0.65, 0.70, 0.29],
                            [0.07, 0.99, 0.11],
@@ -95,9 +88,7 @@ def _brightness_jitter(img: np.ndarray) -> np.ndarray:
     return np.clip(img, 0, 255).astype(np.uint8)
 
 
-# ---------------------------------------------------------------------------
 # Dataset
-# ---------------------------------------------------------------------------
 
 class TissueDataset(Dataset):
     """

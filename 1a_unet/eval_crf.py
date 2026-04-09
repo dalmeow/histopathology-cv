@@ -29,9 +29,6 @@ sys.path.insert(0, str(_HERE.parent / "1_shared"))
 from arch import UNet
 from data_processing import TissueDataset
 
-# ---------------------------------------------------------------------------
-# Paths / constants
-# ---------------------------------------------------------------------------
 
 DATA_ROOT   = _HERE.parent.parent / "Coumputer_Vision_Mini_Project_Data" / "Dataset_Splits"
 CKPT_DIR    = _HERE / "checkpoints"
@@ -59,9 +56,7 @@ _SUMMARY_FIELDS = [
 ]
 
 
-# ---------------------------------------------------------------------------
 # Helpers
-# ---------------------------------------------------------------------------
 
 def _mask_to_rgb(mask: np.ndarray) -> np.ndarray:
     return CLASS_COLORS[mask]
@@ -110,9 +105,7 @@ def _print_metrics(metrics: dict, label: str) -> None:
     print(f"  {'Avg':<10s}  {metrics['avg_dice']:>8.4f}  {metrics['avg_iou']:>8.4f}")
 
 
-# ---------------------------------------------------------------------------
 # CRF
-# ---------------------------------------------------------------------------
 
 def apply_crf(
     raw_rgb: np.ndarray,
@@ -150,9 +143,7 @@ def _run_crf_on_dataset(all_raw, all_probs, sxy, srgb, n_iters, desc="") -> list
     ]
 
 
-# ---------------------------------------------------------------------------
 # Qualitative grid  (4 cols: Image | GT | Baseline | CRF)
-# ---------------------------------------------------------------------------
 
 def _qualitative_crf(
     all_raw:        list,
@@ -185,9 +176,7 @@ def _qualitative_crf(
     print(f"  Saved qualitative grid → {out}")
 
 
-# ---------------------------------------------------------------------------
-# Summary CSV  (same format / fields as eval.py)
-# ---------------------------------------------------------------------------
+# Summary CSV  (same format as eval.py)
 
 def _update_summary(name: str, best: dict, last: dict) -> None:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -205,9 +194,7 @@ def _update_summary(name: str, best: dict, last: dict) -> None:
     print(f"\n  Summary updated → {SUMMARY_CSV}")
 
 
-# ---------------------------------------------------------------------------
 # Main entry point
-# ---------------------------------------------------------------------------
 
 def evaluate_crf(config: dict) -> None:
     """

@@ -13,9 +13,7 @@ def _class_weights(device: torch.device) -> torch.Tensor:
     return w.to(device)
 
 
-# ---------------------------------------------------------------------------
 # Losses
-# ---------------------------------------------------------------------------
 
 class FocalLoss(nn.Module):
     """Multiclass focal loss with optional per-class weights."""
@@ -96,9 +94,7 @@ class LovaszSoftmaxLoss(nn.Module):
         return torch.stack(losses).mean()
 
 
-# ---------------------------------------------------------------------------
 # Criterion builder
-# ---------------------------------------------------------------------------
 
 def build_criterion(loss_type: str, use_class_weights: bool, loss_lambda: float,
                     device: torch.device):

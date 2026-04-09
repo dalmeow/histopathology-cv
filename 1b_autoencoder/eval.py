@@ -1,8 +1,3 @@
-"""Evaluate a finetuned Autoencoder on the test set.
-
-Evaluates both best and last checkpoints, saves metrics.json per experiment,
-and appends a row to the shared results/summary.csv.
-"""
 import csv
 import json
 import sys

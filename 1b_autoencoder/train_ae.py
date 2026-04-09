@@ -36,9 +36,7 @@ _MEAN = torch.tensor([0.6199, 0.4123, 0.6963]).view(1, 3, 1, 1)
 _STD  = torch.tensor([0.1975, 0.1944, 0.1381]).view(1, 3, 1, 1)
 
 
-# ---------------------------------------------------------------------------
 # Reproducibility
-# ---------------------------------------------------------------------------
 
 def set_seed(seed: int) -> None:
     random.seed(seed)
@@ -49,9 +47,7 @@ def set_seed(seed: int) -> None:
     torch.backends.cudnn.benchmark     = False
 
 
-# ---------------------------------------------------------------------------
 # Masking
-# ---------------------------------------------------------------------------
 
 def make_patch_mask(
     batch_size: int, img_size: int, patch_size: int, ratio: float, device: torch.device
@@ -67,9 +63,7 @@ def make_patch_mask(
     return mask
 
 
-# ---------------------------------------------------------------------------
 # Loss
-# ---------------------------------------------------------------------------
 
 def pretrain_loss(
     pred: torch.Tensor, raw: torch.Tensor, mask: torch.Tensor, use_ssim: bool
@@ -108,9 +102,7 @@ def pretrain_loss(
     return mse + SSIM_WEIGHT * (1.0 - ssim_val)
 
 
-# ---------------------------------------------------------------------------
 # Entry point
-# ---------------------------------------------------------------------------
 
 def train_pretrain(config: dict) -> None:
     """Run autoencoder pre-training for the given experiment config."""

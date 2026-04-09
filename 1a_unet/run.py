@@ -25,9 +25,7 @@ from train    import train
 from eval     import evaluate
 from eval_crf import evaluate_crf
 
-# ---------------------------------------------------------------------------
 # Experiment configs
-# ---------------------------------------------------------------------------
 # Every field is written out explicitly in each config — no inheritance —
 # so each experiment is independently readable.
 
@@ -188,9 +186,7 @@ EXPERIMENTS = {
     ),
 }
 
-# ---------------------------------------------------------------------------
 # Entry point
-# ---------------------------------------------------------------------------
 
 def main():
     parser = argparse.ArgumentParser(description="Run a single ablation experiment (train + eval).")
