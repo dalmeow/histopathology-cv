@@ -91,12 +91,12 @@ final FC replaced by `Linear(512→3)`. Full end-to-end fine-tuning.
 
 | Setting | Exp 1 | Exp 2–5 |
 |---------|-------|---------|
-| Optimiser | Adam (lr=1e-3, wd=1e-4) | AdamW (lr=1e-3, wd=1e-2) |
+| Optimiser | Adam (lr=1e-3, wd=1e-4) | Adam (lr=1e-3, wd=5e-4) |
 | Scheduler | ReduceLROnPlateau (patience=8, factor=0.5) | CosineAnnealingWarmRestarts (T₀=20, T_mult=2, η_min=1e-6) |
 | Batch size | 64 | 64 |
 | Epochs | 100 max, early stop patience=15 | 100 max, early stop patience=15 |
 | Augmentation | Baseline (hflip + vflip) | Improved (rot90 + Affine + HED + ColorJitter + GaussianBlur + GaussNoise + CoarseDropout) |
 | Mixup | — | α=0.3 (Exp 4–5 only) |
-| Loss | CrossEntropyLoss | CrossEntropyLoss |
+| Loss | CrossEntropyLoss | FocalLoss (γ=2) |
 | Seed | 42 | 42 |
 | TTA (eval) | 8 views | 8 views |

@@ -16,6 +16,7 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from sklearn.metrics import precision_score, recall_score
 from tqdm import tqdm
@@ -25,6 +26,80 @@ sys.path.insert(0, str(_HERE))
 
 from dataset import NucleiDataset, CLASS_NAMES, NUM_CLASSES
 from model   import SimpleClassifier, NucleiResNet, ResNet18Encoder
+
+
+# ---------------------------------------------------------------------------
+# Focal Loss
+# ---------------------------------------------------------------------------
+
+class FocalLoss(nn.Module):
+    """
+    Focal Loss (Lin et al., 2017 — RetinaNet paper).
+
+    Down-weights easy, well-classified examples and focuses gradient on
+    hard, misclassified ones.  Particularly useful for the
+    Lymphocyte/Histiocyte confusion pair.
+
+    Loss for a single sample:
+        FL = -alpha_t * (1 - p_t)^gamma * log(p_t)
+
+    where:
+        p_t           — softmax probability for the correct class
+        (1-p_t)^gamma — modulating factor (=0 for perfectly classified)
+        alpha_t       — per-class weight (like CE class_weights)
+
+    Parameters
+    ----------
+    alpha     : per-class weight tensor, shape (num_classes,)  [optional]
+    gamma     : focusing parameter (default: 2.0)
+    reduction : "mean" | "sum" | "none"
+    """
+
+    def __init__(
+        self,
+        alpha:     torch.Tensor = None,
+        gamma:     float = 2.0,
+        reduction: str   = "mean",
+    ):
+        super().__init__()
+        self.gamma     = gamma
+        self.reduction = reduction
+        # alpha stored as buffer so it moves to the correct device automatically
+        if alpha is not None:
+            self.register_buffer("alpha", alpha.float())
+        else:
+            self.alpha = None
+
+    def forward(
+        self, logits: torch.Tensor, targets: torch.Tensor
+    ) -> torch.Tensor:
+        # Move alpha to the correct device on the first call
+        if self.alpha is not None and self.alpha.device != logits.device:
+            self.alpha = self.alpha.to(logits.device)
+
+        log_probs = F.log_softmax(logits, dim=1)           # (B, C)
+        probs     = torch.exp(log_probs)                   # (B, C)
+
+        # Gather log-prob and prob of the true class
+        log_pt = log_probs.gather(1, targets.unsqueeze(1)).squeeze(1)  # (B,)
+        pt     = probs.gather(1,     targets.unsqueeze(1)).squeeze(1)  # (B,)
+
+        # Focal modulating factor
+        focal_weight = (1.0 - pt) ** self.gamma
+
+        # Per-class alpha weight
+        if self.alpha is not None:
+            alpha_t = self.alpha.gather(0, targets)   # (B,)
+            focal_weight = alpha_t * focal_weight
+
+        loss = -focal_weight * log_pt   # (B,)
+
+        if self.reduction == "mean":
+            return loss.mean()
+        elif self.reduction == "sum":
+            return loss.sum()
+        return loss
+
 
 DATA_ROOT = _HERE.parent.parent / "Coumputer_Vision_Mini_Project_Data"
 TRAIN_DIR = str(DATA_ROOT / "task2_patches" / "train")
@@ -256,11 +331,12 @@ def train(config: dict) -> None:
     print(f"Parameters : {n_params:,}")
 
     # ---- Loss ----
-    criterion = nn.CrossEntropyLoss()
+    # Exp 1 (SimpleClassifier): standard cross-entropy
+    # Exp 2–5 (NucleiResNet / ResNet-18): focal loss (gamma=2) to focus on hard examples
+    criterion = nn.CrossEntropyLoss() if config["model"] == "simple" else FocalLoss(gamma=2.0)
 
     # ---- Optimiser ----
-    OptimCls = torch.optim.Adam if config["model"] == "simple" else torch.optim.AdamW
-    optimiser = OptimCls(
+    optimiser = torch.optim.Adam(
         model.parameters(), lr=config["lr"], weight_decay=config["weight_decay"]
     )
 

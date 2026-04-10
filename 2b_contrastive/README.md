@@ -137,8 +137,8 @@ All encoder parameters are frozen. Only the head is trained.
 | Batch size | 256 | 256 |
 | Epochs | 500 max, early stop patience=30 | 150 max, early stop patience=30 |
 | Optimiser | Adam (lr=3e-4, wd=1e-4) | Adam (lr=1e-3, wd=1e-4) |
-| LR schedule | Linear warmup (10 epochs) → CosineAnnealing → 1e-6 | Linear warmup (10 epochs) → CosineAnnealing → 1e-6 |
-| Temperature τ | 0.3 | 0.3 |
+| LR schedule | Linear warmup (10 epochs) → CosineAnnealing → 1e-6 | Linear warmup (2 epochs) → CosineAnnealing → 1e-6 |
+| Temperature τ | 0.3 | 0.5 |
 | Projection dim | 128 | 128 |
 | Augmentation (strong) | ColorJitter(b=0.4,c=0.4,s=0.3,h=0.1,p=0.8) + ToGray(p=0.2) | — |
 | Augmentation (moderate) | ColorJitter(b=0.2,c=0.2,s=0.15,h=0.05,p=0.5), no ToGray | — |
@@ -153,7 +153,7 @@ All encoder parameters are frozen. Only the head is trained.
 | Scheduler | ReduceLROnPlateau (patience=8, factor=0.5, mode=max on val acc) | ReduceLROnPlateau (patience=8, factor=0.5, mode=max on val acc) |
 | Batch size | 64 | 64 |
 | Epochs | 100 max, early stop patience=15 | 100 max, early stop patience=15 |
-| Augmentation | Mild: hflip + vflip + rot90 + ColorJitter(b=0.2,c=0.2,s=0.15,h=0.05,p=0.5) | Moderate: + RandomResizedCrop(0.75–1.0) + GaussianBlur + GaussNoise |
+| Augmentation | Improved: hflip + vflip + rot90 + Affine(translate=±5%,scale=0.9–1.1,rotate=±180°,p=0.6) + HEDAug(α=0.2,β=0.2,p=0.5) + ColorJitter(b=0.2,c=0.2,s=0.15,h=0.05,p=0.5) + GaussianBlur(3–5,p=0.3) + GaussNoise(p=0.2) + CoarseDropout(p=0.2) | same |
 | Mixup | α=0.3 (Exp 1–2); disabled (Exp 4) | disabled |
 | Loss | CrossEntropyLoss |
 | Encoder | Fully frozen |

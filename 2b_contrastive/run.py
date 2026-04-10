@@ -51,7 +51,7 @@ EXPERIMENTS = {
         use_eca        = True,
         # ---- Head ----
         head_init      = "random",
-        augment_level  = "mild",
+        augment_level  = "improved",
         mixup_alpha    = 0.3,
         # ---- Pretrain hparams ----
         pretrain_batch_size = 256,
@@ -81,7 +81,7 @@ EXPERIMENTS = {
         use_eca        = True,
         # ---- Head: + K-means initialisation ----
         head_init      = "kmeans",
-        augment_level  = "mild",
+        augment_level  = "improved",
         mixup_alpha    = 0.3,
         # ---- Pretrain hparams: identical to exp 1 ----
         pretrain_batch_size = 256,
@@ -109,9 +109,9 @@ EXPERIMENTS = {
         backbone       = "nuclresnet",
         color_strength = "moderate",
         use_eca        = True,
-        # ---- Head: K-means init, − Mixup, moderate (SimCLR-style) finetune aug ----
+        # ---- Head: K-means init, − Mixup, improved finetune aug ----
         head_init      = "kmeans",
-        augment_level  = "moderate",
+        augment_level  = "improved",
         mixup_alpha    = 0.0,
         # ---- Pretrain hparams: same as exp 1/2 (different aug via color_strength) ----
         pretrain_batch_size = 256,
@@ -141,15 +141,15 @@ EXPERIMENTS = {
         use_eca        = False,      # N/A for ResNet-18
         # ---- Head: random init, − Mixup ----
         head_init      = "random",
-        augment_level  = "mild",
+        augment_level  = "improved",
         mixup_alpha    = 0.0,
-        # ---- Pretrain hparams: same schedule as NucleiResNet exps ----
+        # ---- Pretrain hparams: shorter warmup (pretrained weights) + softer temperature ----
         pretrain_batch_size = 256,
         pretrain_epochs     = 150,
-        pretrain_warmup     = 10,
+        pretrain_warmup     = 2,
         pretrain_lr         = 1e-3,
         pretrain_wd         = 1e-4,
-        pretrain_temp       = 0.3,
+        pretrain_temp       = 0.5,
         pretrain_proj_dim   = 128,
         pretrain_early_stop = 30,
         # ---- Finetune hparams: same (minus Mixup) ----
