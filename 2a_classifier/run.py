@@ -69,7 +69,7 @@ EXPERIMENTS = {
         mixup_alpha   = 0.0,
         # Optimiser
         lr            = 1e-3,
-        weight_decay  = 1e-2,
+        weight_decay  = 5e-4,
         # Scheduler: CosineAnnealingWarmRestarts (stepped per batch)
         scheduler     = "cosine",
         cosine_t0     = 20,
@@ -91,7 +91,7 @@ EXPERIMENTS = {
         mixup_alpha   = 0.0,
         # Optimiser: identical to exp2
         lr            = 1e-3,
-        weight_decay  = 1e-2,
+        weight_decay  = 5e-4,
         # Scheduler: identical to exp2
         scheduler     = "cosine",
         cosine_t0     = 20,
@@ -113,7 +113,7 @@ EXPERIMENTS = {
         mixup_alpha   = 0.3,
         # Optimiser: identical to exp3
         lr            = 1e-3,
-        weight_decay  = 1e-2,
+        weight_decay  = 5e-4,
         # Scheduler: identical to exp3
         scheduler     = "cosine",
         cosine_t0     = 20,
@@ -135,7 +135,7 @@ EXPERIMENTS = {
         mixup_alpha   = 0.3,
         # Optimiser: identical to exp4
         lr            = 1e-3,
-        weight_decay  = 1e-2,
+        weight_decay  = 5e-4,
         # Scheduler: identical to exp4
         scheduler     = "cosine",
         cosine_t0     = 20,
